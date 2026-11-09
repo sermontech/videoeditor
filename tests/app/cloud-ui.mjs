@@ -173,6 +173,13 @@ try {
   ).toHaveAttribute("aria-pressed", "true");
   await page.getByLabel("Primary team colour", { exact: true }).fill("#bb2244");
   await page.getByLabel("Pulse accent lights where present").check();
+  await page.getByLabel("Apply football kit", { exact: true }).check();
+  await page
+    .getByLabel("Jersey pattern", { exact: true })
+    .selectOption("stripes");
+  await page.getByLabel("Player name", { exact: true }).fill("CLEAR TAKE");
+  await page.getByLabel("Player number", { exact: true }).fill("9");
+  await page.getByLabel("Shorts colour", { exact: true }).fill("#172b2e");
   const footballDownload = page.waitForEvent("download");
   await page
     .getByRole("button", { name: "Save scene file", exact: true })
@@ -197,6 +204,18 @@ try {
   await page
     .locator(".three-viewport")
     .screenshot({ path: ".tools/cloud-ui/football-tunnel.png" });
+  await expect(
+    page.getByLabel("Apply football kit", { exact: true }),
+  ).toBeChecked();
+  await expect(page.getByLabel("Player name", { exact: true })).toHaveValue(
+    "CLEAR TAKE",
+  );
+  await expect(page.getByLabel("Player number", { exact: true })).toHaveValue(
+    "9",
+  );
+  await page
+    .locator(".three-viewport")
+    .screenshot({ path: ".tools/cloud-ui/football-kit.png" });
   const videoDownload = page.waitForEvent("download", { timeout: 30000 });
   await page
     .getByRole("button", { name: "Export WebM video", exact: true })

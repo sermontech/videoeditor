@@ -1,3 +1,6 @@
+import KitControls from "./KitControls";
+import { kitDefaults } from "./football-kits.mjs";
+import { applyKit, clothingMeshes } from "./kit-materials";
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -44,6 +47,23 @@ export default function ThreeStudio() {
   const [recording, setRecording] = useState(false),
     [notice, setNotice] = useState("");
   const capture = useRef(null);
+  const [kit, setKit] = useState(() => structuredClone(kitDefaults));
+  const [meshNames, setMeshNames] = useState([]),
+    [modelRevision, setModelRevision] = useState(0);
+  useEffect(() => {
+    const s = engine.current;
+    if (!s) return;
+    try {
+      s.kitCleanup?.();
+      s.kitCleanup = applyKit(s.model, kit, s.demo);
+    } catch (e) {
+      setError(e.message);
+    }
+    return () => {
+      s.kitCleanup?.();
+      s.kitCleanup = null;
+    };
+  }, [kit, modelRevision]);
   const [football, setFootball] = useState(null),
     [category, setCategory] = useState("All"),
     [search, setSearch] = useState("");
@@ -139,12 +159,30 @@ export default function ThreeStudio() {
       model.add(mesh);
       return mesh;
     };
-    part(new THREE.BoxGeometry(0.7, 0.8, 0.4), 0xb8e3cc, 0, 1, 0);
+    const torso = part(new THREE.BoxGeometry(0.7, 0.8, 0.4), 0xb8e3cc, 0, 1, 0);
+    torso.userData = { kitPart: "jersey", kitLabels: true };
+    torso.name = "Jersey";
     part(new THREE.BoxGeometry(0.6, 0.5, 0.5), 0xf6f2e9, 0, 1.7, 0);
     for (const x of [-0.17, 0.17])
       part(new THREE.SphereGeometry(0.065), 0x172b2e, x, 1.75, 0.26);
-    for (const x of [-0.24, 0.24])
-      part(new THREE.BoxGeometry(0.19, 0.55, 0.25), 0x759d90, x, 0.32, 0);
+    for (const x of [-0.24, 0.24]) {
+      const shorts = part(
+        new THREE.BoxGeometry(0.19, 0.28, 0.25),
+        0x759d90,
+        x,
+        0.455,
+        0,
+      );
+      shorts.userData.kitPart = "shorts";
+      const sock = part(
+        new THREE.BoxGeometry(0.19, 0.27, 0.25),
+        0x759d90,
+        x,
+        0.18,
+        0,
+      );
+      sock.userData.kitPart = "socks";
+    }
     const arm = part(
       new THREE.BoxGeometry(0.18, 0.7, 0.2),
       0xb8e3cc,
@@ -152,7 +190,15 @@ export default function ThreeStudio() {
       1,
       0,
     );
-    part(new THREE.BoxGeometry(0.18, 0.7, 0.2), 0xb8e3cc, -0.5, 1, 0);
+    arm.userData.kitPart = "jersey";
+    const otherArm = part(
+      new THREE.BoxGeometry(0.18, 0.7, 0.2),
+      0xb8e3cc,
+      -0.5,
+      1,
+      0,
+    );
+    otherArm.userData.kitPart = "jersey";
     scene.add(model);
     const state = {
       renderer,
@@ -205,6 +251,7 @@ export default function ThreeStudio() {
       observer.disconnect();
       controls.dispose();
       state.mixer?.stopAllAction();
+      state.kitCleanup?.();
       dispose(scene);
       renderer.dispose();
       renderer.domElement.remove();
@@ -252,6 +299,8 @@ export default function ThreeStudio() {
         new THREE.Vector3(center.x, bounds.min.y, center.z),
       );
       s.mixer?.stopAllAction();
+      s.kitCleanup?.();
+      s.kitCleanup = null;
       s.scene.remove(s.model);
       dispose(s.model);
       s.model = wrapper;
@@ -270,6 +319,13 @@ export default function ThreeStudio() {
       );
       setClip("");
       setName(file.name);
+      setMeshNames(
+        clothingMeshes(s.model).map(
+          (m, i) => `${i + 1}: ${m.name || "Unnamed mesh"}`,
+        ),
+      );
+      if (!restoring) setKit({ ...structuredClone(kitDefaults) });
+      setModelRevision((r) => r + 1);
       return true;
     } catch (e) {
       if (restoring) throw e;
@@ -310,6 +366,7 @@ export default function ThreeStudio() {
         camera: s.camera.position.toArray(),
         target: s.controls.target.toArray(),
         football,
+        kit,
         model: s.modelBuffer ? base64(s.modelBuffer) : null,
       });
       saveBlob(
@@ -347,6 +404,7 @@ export default function ThreeStudio() {
       setBackground(scene.background);
       s.scene.background.set(scene.background);
       setFootball(scene.football || null);
+      setKit(scene.kit || structuredClone(kitDefaults));
       setFormat(scene.format);
       setDuration(scene.duration);
       setPlaying(scene.playing);
@@ -676,6 +734,12 @@ export default function ThreeStudio() {
                 </button>
               </div>
             )}
+            <KitControls
+              kit={kit}
+              onChange={setKit}
+              meshes={meshNames}
+              demo={engine.current?.demo !== false}
+            />
             <h3>{name}</h3>
             <label className="field">
               Import GLB model

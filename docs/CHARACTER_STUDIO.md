@@ -155,3 +155,36 @@ controls; animated crowds; moving cameras/preset audio and animation assets;
 custom venue reconstruction; multi-player layouts; licensed official branding;
 kit-aware recolouring. Presets currently apply only to the 3D workspace, not the
 separate 2D card renderer. No backend migration or worker upgrade is needed.
+
+## Football kit designer — concept material release
+
+**3D studio → Football kit designer → Apply football kit** works independently
+of the Football environment selector. The demo has predefined jersey, shorts
+and sock sections. Choose solid/stripes/hoops/sash/halves, five colours, a player
+name (20 characters) and number (0–99, optional). Toggle lettering off for clean
+concepts. Generated 1024px jersey textures respond to the existing scene lights.
+
+Competition suggestions cover major regional leagues, women's leagues and
+international tournaments. Club/national-team and season fields accept custom
+text. Home/Away/Third/Goalkeeper/Special/Historical are organizational labels;
+changing these labels does not download a real kit or select official colours.
+**No official, season-accurate, licensed or club-specific assets are bundled.**
+Every design is explicitly marked Concept / stylized. No sponsor/manufacturer
+logos, crests, competition patches or verified licensing badges are included.
+
+Imported GLBs: assign one existing mesh per jersey/shorts/socks slot manually.
+The system does not infer clothing or add garments to a bare/combined body mesh.
+Patterns and lettering follow existing UVs; accurate placement can require UV
+editing outside Clear Take. Original materials restore when kit mode is disabled;
+new model imports reset mappings. No fabric physics, wrinkle generation, automatic
+body fitting, collars, armbands or patches yet. Demo boxes are not realistic cloth.
+
+Kit choices persist in downloaded scene JSON, remain unchanged when backgrounds
+change, and appear in PNG/WebM exports. Old scenes without kit settings still
+load. These browser-only features need no database migration or worker update.
+
+Verified: 28 unit tests, build, browser demo kit editing/scene restore/export and
+full FFmpeg decode of the recorded kitted-character WebM. Screenshot inspection
+confirmed jersey stripes, number and independent shorts/socks. Imported garment
+UVs and real Windows performance remain unverified. Global official asset
+coverage, licensing/season-update pipeline and automatic dressing remain backlog.
