@@ -2909,3 +2909,5 @@ small {
 .three-controls small, .three-controls p { line-height: 1.5; font-size: 12px; }
 .three-controls button { padding: 12px; border: 1px solid #72958a; border-radius: 8px; cursor: pointer; }
 @media(max-width: 900px) { .three-layout { grid-template-columns: 1fr; } .three-viewport { height: 380px; } }
+.three-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.three-fieldset:disabled { opacity: .65; }

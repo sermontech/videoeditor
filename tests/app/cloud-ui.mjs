@@ -134,18 +134,36 @@ try {
   await expect(
     page.getByRole("button", { name: "Play animation", exact: true }),
   ).toBeVisible();
-  await page
-    .getByLabel("Import GLB model")
-    .setInputFiles({
-      name: "invalid.glb",
-      mimeType: "model/gltf-binary",
-      buffer: Buffer.from("invalid"),
-    });
+  await page.getByLabel("Import GLB model").setInputFiles({
+    name: "invalid.glb",
+    mimeType: "model/gltf-binary",
+    buffer: Buffer.from("invalid"),
+  });
   await expect(page.getByRole("alert")).toContainText("Invalid GLB");
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download preview PNG" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe("clear-take-3d-preview.png");
+  const sceneDownload = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Save scene file", exact: true })
+    .click();
+  const savedScene = await sceneDownload;
+  await savedScene.saveAs(".tools/cloud-ui/scene.json");
+  await page.getByLabel("Environment colour").fill("#ff0000");
+  await page
+    .getByLabel("Open scene file")
+    .setInputFiles(".tools/cloud-ui/scene.json");
+  await expect(page.getByLabel("Environment colour")).toHaveValue("#172b2e");
+  const videoDownload = page.waitForEvent("download", { timeout: 30000 });
+  await page
+    .getByRole("button", { name: "Export WebM video", exact: true })
+    .click();
+  const video = await videoDownload;
+  await video.saveAs(".tools/cloud-ui/three-export.webm");
+  expect(fs.statSync(".tools/cloud-ui/three-export.webm").size).toBeGreaterThan(
+    1000,
+  );
   await page.screenshot({ path: ".tools/cloud-ui/three-studio.png" });
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Sign out", exact: true }).click();

@@ -86,3 +86,28 @@ Verified: 21 unit tests, Vite build, and headless browser checks with software
 WebGL for workspace navigation, canvas creation, pause, invalid GLB rejection,
 PNG download and sign-out cleanup. Imported production character rigs and Intel
 Iris Xe performance still need real-device testing.
+
+## Portable scenes and local WebM exports
+
+The 3D studio now offers **Save scene file**, **Open scene file**, and **Export
+WebM video**. A versioned JSON scene includes the original embedded GLB, camera
+position/target, selected animation, playing state, background, duration and
+aspect ratio. Keep this downloaded file: there is no automatic browser or cloud
+persistence. To restore a demo scene after importing another model, leave the
+workspace and reopen it first. Animation playback time is not saved.
+
+WebM exports are silent, real-time browser captures at up to 30 fps, with
+5/10/15/20/30-second duration choices and 16:9 (1280×720), 9:16 (720×1280),
+1:1 (720×720), and 4:5 (720×900). Export restarts the selected animation; rest
+poses stay still. The chosen ratio determines export framing (the interactive
+viewport itself is responsive). Camera edits/imports are locked during capture.
+Keep the tab visible; hiding it cancels the export. Cancel or leaving the workspace
+releases capture tracks and timers. Browser/GPU load can reduce frame rate or
+alter timing; this is not an offline frame-exact renderer. No audio or MP4
+conversion is provided yet. Use Chrome/Edge with canvas capture/WebM support.
+
+Verified on Linux software WebGL: 23 unit tests, build, browser scene-file
+roundtrip and actual five-second demo WebM download, followed by full FFmpeg
+decode. Windows performance and imported-rig recording remain to be tested.
+This supersedes the earlier preview-only status; cloud history, MP4, lip-sync,
+AI generation and advanced PRD features remain pending.
