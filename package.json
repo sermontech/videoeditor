@@ -15,7 +15,8 @@
     "start:worker": "node server/worker.mjs",
     "start:cloud": "node server/index.mjs",
     "test:cloud": "node tests/app/cloud-integration.mjs",
-    "test:cloud-ui": "node tests/app/cloud-ui.mjs"
+    "test:cloud-ui": "node tests/app/cloud-ui.mjs",
+    "convert:3d": "node scripts/convert-3d.mjs"
   },
   "repository": {
     "type": "git",

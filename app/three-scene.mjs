@@ -1,3 +1,4 @@
+import { validateMotion } from "./motion-presets.mjs";
 import { validateKit } from "./football-kits.mjs";
 import { validateFootball } from "./football-presets.mjs";
 export const formats = {
@@ -42,6 +43,7 @@ export function validateScene(s) {
     throw Error("Invalid embedded model.");
   if (s.football != null) validateFootball(s.football);
   if (s.kit != null) validateKit(s.kit);
+  if (s.motion != null) validateMotion(s.motion);
   return s;
 }
 export function saveBlob(blob, name) {

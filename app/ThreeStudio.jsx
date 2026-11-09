@@ -1,3 +1,10 @@
+import {
+  demoMotions,
+  cameraMoves,
+  motionDefaults,
+  poseAt,
+  cameraAt,
+} from "./motion-presets.mjs";
 import KitControls from "./KitControls";
 import { kitDefaults } from "./football-kits.mjs";
 import { applyKit, clothingMeshes } from "./kit-materials";
@@ -47,6 +54,20 @@ export default function ThreeStudio() {
   const [recording, setRecording] = useState(false),
     [notice, setNotice] = useState("");
   const capture = useRef(null);
+  const [motion, setMotion] = useState({ ...motionDefaults });
+  useEffect(() => {
+    const s = engine.current;
+    if (!s) return;
+    s.motion = motion;
+    s.time = 0;
+    if (!s.cameraBase || s.motionCamera === "static")
+      s.cameraBase = s.camera.position.toArray();
+    s.cameraTarget = s.controls.target.toArray();
+    s.motionCamera = motion.camera;
+    if (motion.camera === "static" && s.cameraBase)
+      s.camera.position.fromArray(s.cameraBase);
+    s.controls.enabled = motion.camera === "static";
+  }, [motion]);
   const [kit, setKit] = useState(() => structuredClone(kitDefaults));
   const [meshNames, setMeshNames] = useState([]),
     [modelRevision, setModelRevision] = useState(0);
@@ -71,6 +92,7 @@ export default function ThreeStudio() {
   const selectedPreset = footballPresets.find((p) => p.id === football?.preset);
   function applyCharacter(s, settings) {
     const o = settings || { x: 0, y: 0, z: 0, rotation: 0, scale: 1 };
+    s.anchor = [o.x, o.y, o.z];
     s.model.position.set(o.x, o.y, o.z);
     s.model.rotation.y = (o.rotation * Math.PI) / 180;
     s.model.scale.setScalar((s.baseScale || 1) * o.scale);
@@ -165,6 +187,7 @@ export default function ThreeStudio() {
     part(new THREE.BoxGeometry(0.6, 0.5, 0.5), 0xf6f2e9, 0, 1.7, 0);
     for (const x of [-0.17, 0.17])
       part(new THREE.SphereGeometry(0.065), 0x172b2e, x, 1.75, 0.26);
+    const legs = [];
     for (const x of [-0.24, 0.24]) {
       const shorts = part(
         new THREE.BoxGeometry(0.19, 0.28, 0.25),
@@ -182,6 +205,15 @@ export default function ThreeStudio() {
         0,
       );
       sock.userData.kitPart = "socks";
+      const pivot = new THREE.Group();
+      pivot.position.set(x, 0.6, 0);
+      model.add(pivot);
+      for (const mesh of [shorts, sock]) {
+        pivot.add(mesh);
+        mesh.position.x -= x;
+        mesh.position.y -= 0.6;
+      }
+      legs.push(pivot);
     }
     const arm = part(
       new THREE.BoxGeometry(0.18, 0.7, 0.2),
@@ -199,6 +231,16 @@ export default function ThreeStudio() {
       0,
     );
     otherArm.userData.kitPart = "jersey";
+    const shoulder = (mesh) => {
+      const pivot = new THREE.Group();
+      pivot.position.set(mesh.position.x, 1.35, 0);
+      model.add(pivot);
+      pivot.add(mesh);
+      mesh.position.set(0, -0.35, 0);
+      return pivot;
+    };
+    const rightShoulder = shoulder(arm),
+      leftShoulder = shoulder(otherArm);
     scene.add(model);
     const state = {
       renderer,
@@ -212,6 +254,14 @@ export default function ThreeStudio() {
       time: 0,
       demo: true,
       arm,
+      rightShoulder,
+      leftShoulder,
+      legs,
+      anchor: [0, 0, 0],
+      motion: { ...motionDefaults },
+      cameraBase: null,
+      cameraTarget: [0, 1, 0],
+      motionCamera: "static",
       modelBuffer: null,
       key,
       fill,
@@ -237,9 +287,27 @@ export default function ThreeStudio() {
       if (state.playing) {
         state.time += delta;
         state.mixer?.update(delta);
-        if (state.demo) state.arm.rotation.z = Math.sin(state.time * 2) * 0.35;
+        if (state.demo) {
+          const p = poseAt(state.motion.demo, state.time * state.motion.speed);
+          state.leftShoulder.rotation.set(p.leftArm, 0, p.armSpread);
+          state.rightShoulder.rotation.set(p.rightArm, 0, -p.armSpread);
+          state.legs[0].rotation.x = p.leftLeg;
+          state.legs[1].rotation.x = p.rightLeg;
+          state.model.position.y = state.anchor[1] + p.bounce;
+        }
       }
       state.environment?.update(state.time);
+      if (state.motion.camera !== "static" && state.cameraBase) {
+        camera.position.fromArray(
+          cameraAt(
+            state.motion.camera,
+            state.time * state.motion.speed,
+            state.cameraBase,
+            state.cameraTarget,
+          ),
+        );
+        controls.target.fromArray(state.cameraTarget);
+      }
       controls.update();
       renderer.render(scene, camera);
     }
@@ -363,10 +431,14 @@ export default function ThreeStudio() {
         duration,
         playing,
         clip: clip === "" ? -1 : Number(clip),
-        camera: s.camera.position.toArray(),
+        camera:
+          motion.camera === "static"
+            ? s.camera.position.toArray()
+            : s.cameraBase || s.camera.position.toArray(),
         target: s.controls.target.toArray(),
         football,
         kit,
+        motion,
         model: s.modelBuffer ? base64(s.modelBuffer) : null,
       });
       saveBlob(
@@ -405,6 +477,10 @@ export default function ThreeStudio() {
       s.scene.background.set(scene.background);
       setFootball(scene.football || null);
       setKit(scene.kit || structuredClone(kitDefaults));
+      setMotion(scene.motion || { ...motionDefaults });
+      s.cameraBase = [...scene.camera];
+      s.cameraTarget = [...scene.target];
+      s.motionCamera = "restoring";
       setFormat(scene.format);
       setDuration(scene.duration);
       setPlaying(scene.playing);
@@ -460,7 +536,7 @@ export default function ThreeStudio() {
       s.renderer.setSize(oldSize.x, oldSize.y);
       s.camera.aspect = oldAspect;
       s.camera.updateProjectionMatrix();
-      s.controls.enabled = true;
+      s.controls.enabled = s.motion.camera === "static";
       s.playing = oldPlaying;
       s.time = oldTime;
       capture.current = null;
@@ -563,6 +639,8 @@ export default function ThreeStudio() {
                   if (engine.current) {
                     engine.current.camera.position.set(3, 2, 5);
                     engine.current.controls.target.set(0, 1, 0);
+                    engine.current.cameraBase = [3, 2, 5];
+                    engine.current.cameraTarget = [0, 1, 0];
                   }
                 }}
               >
@@ -760,12 +838,72 @@ export default function ThreeStudio() {
               here. Use only models you have permission to use. VRM, FBX and
               MetaHuman are not supported yet.
             </small>
+            <div className="football-presets">
+              <h3>Motion and camera</h3>
+              {engine.current?.demo !== false ? (
+                <label className="field">
+                  Demo motion
+                  <select
+                    aria-label="Demo motion"
+                    value={motion.demo}
+                    onChange={(e) =>
+                      setMotion({ ...motion, demo: e.target.value })
+                    }
+                  >
+                    {Object.entries(demoMotions).map(([id, label]) => (
+                      <option key={id} value={id}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <p>
+                  Imported models use their own animation clips below. Demo
+                  motions are not retargeted onto imported rigs.
+                </p>
+              )}
+              <label className="field">
+                Camera move
+                <select
+                  aria-label="Camera move"
+                  value={motion.camera}
+                  onChange={(e) =>
+                    setMotion({ ...motion, camera: e.target.value })
+                  }
+                >
+                  {Object.entries(cameraMoves).map(([id, label]) => (
+                    <option key={id} value={id}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                Preset speed
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2"
+                  step="0.1"
+                  value={motion.speed}
+                  onChange={(e) =>
+                    setMotion({ ...motion, speed: Number(e.target.value) })
+                  }
+                />
+              </label>
+              <small>
+                Procedural stylized demo motions, not motion capture or ball
+                physics. Camera moves start from your framed shot. Select Static
+                / manual to reframe. Speed affects demo motion and camera only.
+              </small>
+            </div>
             <label className="field">
               Animation
               <select value={clip} onChange={(e) => selectClip(e.target.value)}>
                 <option value="">
                   {name === "Clear Take demo robot"
-                    ? "Demo arm motion"
+                    ? "Use demo motion preset"
                     : "Rest pose"}
                 </option>
                 {clips.map((c) => (
@@ -801,6 +939,8 @@ export default function ThreeStudio() {
                 if (s) {
                   s.camera.position.set(3, 2, 5);
                   s.controls.target.set(0, 1, 0);
+                  s.cameraBase = [3, 2, 5];
+                  s.cameraTarget = [0, 1, 0];
                   s.controls.update();
                 }
               }}
@@ -850,6 +990,25 @@ export default function ThreeStudio() {
               />
             </label>
             <button onClick={recordVideo}>Export WebM video</button>
+            <details>
+              <summary>MP4 and audio on your Windows computer</summary>
+              <p>
+                After downloading your WebM, update your local repository and
+                run this from its folder in PowerShell:
+              </p>
+              <code>
+                npm run convert:3d -- "$HOME/Downloads/clear-take-3d.webm"
+                "$HOME/Downloads/clear-take-3d.mp4"
+              </code>
+              <p>
+                Optionally append{" "}
+                <code>--audio "C:/path/to/your-audio.mp3"</code>. Use audio you
+                have rights to. This local converter creates a new MP4, limits
+                video to 30 seconds, and pads/trims the audio. No upload or paid
+                service. Requires the existing Python renderer setup. Choose a
+                fresh output filename each time.
+              </p>
+            </details>
             <small>
               Records locally in real time at up to 30 fps. Keep this tab
               visible. No audio, MP4 conversion or cloud history yet. Export

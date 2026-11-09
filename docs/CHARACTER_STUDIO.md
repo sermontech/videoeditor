@@ -188,3 +188,39 @@ full FFmpeg decode of the recorded kitted-character WebM. Screenshot inspection
 confirmed jersey stripes, number and independent shorts/socks. Imported garment
 UVs and real Windows performance remain unverified. Global official asset
 coverage, licensing/season-update pipeline and automatic dressing remain backlog.
+
+## Motion presets, camera moves and local MP4 conversion
+
+The built-in robot now has shoulder/hip pivots and five procedural presets:
+idle, wave, walkout-in-place, celebration and warm-up. These are stylized
+mathematical motions, not mocap, foot IK or ball control. Imported GLBs keep
+using their own clips; no automatic rig retargeting is claimed.
+
+Static/manual, gentle orbit, dolly-in/out and side-to-side tracking work with
+both demo and imported models. Frame manually first, then select a move. Preset
+speed (0.5–2×) affects camera/demo motion, not imported clip playback. Camera
+paths are bounded but are not collision-aware: review framing in small rooms.
+Motion settings persist in scene JSON. Playback pause stops preset motion;
+export restarts it from zero. The kit follows the demo's animated limb meshes.
+
+MP4 conversion is now available as a separate local command, not one-click cloud
+export. After `git pull --ff-only` in the Windows checkout, with renderer
+requirements already installed, use PowerShell:
+
+```powershell
+npm run convert:3d -- "$HOME/Downloads/clear-take-3d.webm" "$HOME/Downloads/clear-take-3d.mp4"
+```
+
+Append `--audio "C:/path/to/your-audio.mp3"` for an audio track you own/have
+permission to use. The optional audio replaces original audio, is loudness
+normalized and padded/trimmed to the video. Existing output files are never
+overwritten. Input limit 200 MB video / 100 MB audio; output is capped at 30
+seconds and 1920px per dimension, H.264/yuv420p 30 fps with AAC audio and fast
+start. The converter uses existing local FFmpeg/Python dependencies and strips
+cloud credentials from its environment. No local network listener or API needed.
+This does not provide lip-sync, music generation, or licensed audio packs.
+
+Verified on Linux: 31 units, browser celebration/orbit settings restoration and
+WebM capture, real WebM→MP4 conversion with and without audio, full FFmpeg decode,
+and an automated overwrite-protection test. Windows execution still requires a
+real-device check. Browser conversion guidance is in the 3D export section.

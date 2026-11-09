@@ -180,6 +180,10 @@ try {
   await page.getByLabel("Player name", { exact: true }).fill("CLEAR TAKE");
   await page.getByLabel("Player number", { exact: true }).fill("9");
   await page.getByLabel("Shorts colour", { exact: true }).fill("#172b2e");
+  await page
+    .getByLabel("Demo motion", { exact: true })
+    .selectOption("celebrate");
+  await page.getByLabel("Camera move", { exact: true }).selectOption("orbit");
   const footballDownload = page.waitForEvent("download");
   await page
     .getByRole("button", { name: "Save scene file", exact: true })
@@ -216,6 +220,12 @@ try {
   await page
     .locator(".three-viewport")
     .screenshot({ path: ".tools/cloud-ui/football-kit.png" });
+  await expect(page.getByLabel("Demo motion", { exact: true })).toHaveValue(
+    "celebrate",
+  );
+  await expect(page.getByLabel("Camera move", { exact: true })).toHaveValue(
+    "orbit",
+  );
   const videoDownload = page.waitForEvent("download", { timeout: 30000 });
   await page
     .getByRole("button", { name: "Export WebM video", exact: true })
