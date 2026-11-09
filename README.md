@@ -1,4 +1,20 @@
-# AI Video Editor
+# AI Video Editor / Clear Take Studio
+
+## Creator app
+
+The repository now includes **Clear Take**, a working creator studio with projects, media uploads, editable storyboards, brand settings, MP4 rendering and a transparent per-generation review loop.
+
+```sh
+npm ci
+npm run setup:render
+npm run dev
+```
+
+See **[CREATOR_STUDIO.md](CREATOR_STUDIO.md)** for Windows-compatible setup, features, tests, storage and security limitations. The app is single-user and local-first; external AI providers are not connected. `npm test` now runs app unit tests; historical tool smoke checks use `npm run test:tools`.
+
+---
+
+The following records the original standalone editing-tool setup.
 
 ## Workspace
 
@@ -23,7 +39,7 @@ These are Arena workspace folders, **not folders on your personal computer**. Me
 | whisper.cpp | 1.9.5-dev, commit f92e1e4d1056700c39d4e86c1140f0a088fe1ab6 | Built CPU CLI from source; help works. **No trained model installed; transcription not verified.** |
 | yt-dlp | 2026.10.26 | Listed extractors and downloaded a local file URL; byte-for-byte comparison passed. External video websites not tested. |
 
-`npm test` repeats the render, decode, probe, Whisper CLI and local download checks. It does **not** certify speech recognition or external website downloads. Tests and logs live in `.tools/`. No user footage was needed for these synthetic tests.
+`npm run test:tools` repeats the standalone render, decode, probe, Whisper CLI and local download checks. It does **not** certify speech recognition or external website downloads. Tests and logs live in `.tools/`. No user footage was needed for these synthetic tests.
 
 ## Use installed tools
 
@@ -37,7 +53,7 @@ remotion --help
 hyperframes --help
 whisper-cli --help
 python3 -m yt_dlp --version
-npm test
+npm run test:tools
 ```
 
 Rendering uses npm-packaged Chromium 153 with its bundled Linux libraries, software rendering, and one worker. HyperFrames telemetry was disabled. FFmpeg was installed from the `imageio-ffmpeg` Python wheel; FFprobe comes from Remotion's compositor package. These are local executables, not a system-wide OS installation. HyperFrames is the CLI, not its desktop application.
