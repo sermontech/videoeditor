@@ -1,0 +1,10 @@
+node_modules/
+.tools/
+AI Video Editor/Raw footages/*
+!AI Video Editor/Raw footages/.gitkeep
+AI Video Editor/Exports/*
+!AI Video Editor/Exports/.gitkeep
+AI Video Editor/References/*
+!AI Video Editor/References/.gitkeep
+
+.hyperframes/
