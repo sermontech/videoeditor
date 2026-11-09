@@ -9,6 +9,12 @@ import {
   base64,
   unbase64,
 } from "./three-scene.mjs";
+import {
+  footballPresets,
+  footballDefaults,
+  fitHeight,
+} from "./football-presets.mjs";
+import { buildFootball } from "./football-environment";
 import { validateGlb } from "./model-validation";
 
 function dispose(root) {
@@ -38,6 +44,53 @@ export default function ThreeStudio() {
   const [recording, setRecording] = useState(false),
     [notice, setNotice] = useState("");
   const capture = useRef(null);
+  const [football, setFootball] = useState(null),
+    [category, setCategory] = useState("All"),
+    [search, setSearch] = useState("");
+  const patchFootball = (patch) => setFootball((v) => ({ ...v, ...patch }));
+  const selectedPreset = footballPresets.find((p) => p.id === football?.preset);
+  function applyCharacter(s, settings) {
+    const o = settings || { x: 0, y: 0, z: 0, rotation: 0, scale: 1 };
+    s.model.position.set(o.x, o.y, o.z);
+    s.model.rotation.y = (o.rotation * Math.PI) / 180;
+    s.model.scale.setScalar((s.baseScale || 1) * o.scale);
+    s.model.traverse((m) => {
+      if (m.isMesh) {
+        m.castShadow = true;
+        m.receiveShadow = true;
+      }
+    });
+  }
+  useEffect(() => {
+    const s = engine.current;
+    if (!s) return;
+    if (s.environment) {
+      s.scene.remove(s.environment.root);
+      dispose(s.environment.root);
+      s.environment = null;
+    }
+    s.grid.visible = !football;
+    if (football) {
+      s.environment = buildFootball(football);
+      s.scene.add(s.environment.root);
+      s.scene.background.set(s.environment.preset.sky);
+      s.key.intensity = 3 * football.light;
+      s.fill.intensity = 1.2 * football.light;
+      s.key.color.set(football.preset === "dusk" ? "#ffcb91" : "#ffffff");
+      s.key.position.set(
+        football.preset === "dark-studio" ? -3 : 3,
+        5,
+        football.preset === "dark-studio" ? -2 : 4,
+      );
+    } else {
+      s.scene.background.set(background);
+      s.key.intensity = 3;
+      s.fill.intensity = 2;
+      s.key.color.set("#ffffff");
+      s.key.position.set(3, 5, 4);
+    }
+    applyCharacter(s, football);
+  }, [football]);
   useEffect(() => {
     let renderer;
     try {
@@ -51,6 +104,8 @@ export default function ThreeStudio() {
       );
       return;
     }
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     host.current.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
@@ -60,9 +115,17 @@ export default function ThreeStudio() {
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 1, 0);
     controls.enableDamping = true;
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x354947, 2));
+    const fill = new THREE.HemisphereLight(0xffffff, 0x354947, 2);
+    scene.add(fill);
     const key = new THREE.DirectionalLight(0xffffff, 3);
     key.position.set(3, 5, 4);
+    key.castShadow = true;
+    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.camera.left = -6;
+    key.shadow.camera.right = 6;
+    key.shadow.camera.top = 6;
+    key.shadow.camera.bottom = -6;
+    key.shadow.bias = -0.001;
     scene.add(key);
     const grid = new THREE.GridHelper(10, 20, 0x72958a, 0x39564c);
     scene.add(grid);
@@ -104,6 +167,11 @@ export default function ThreeStudio() {
       demo: true,
       arm,
       modelBuffer: null,
+      key,
+      fill,
+      grid,
+      environment: null,
+      baseScale: 1,
     };
     engine.current = state;
     const observer = new ResizeObserver(() => {
@@ -125,6 +193,7 @@ export default function ThreeStudio() {
         state.mixer?.update(delta);
         if (state.demo) state.arm.rotation.z = Math.sin(state.time * 2) * 0.35;
       }
+      state.environment?.update(state.time);
       controls.update();
       renderer.render(scene, camera);
     }
@@ -176,7 +245,8 @@ export default function ThreeStudio() {
       }
       const wrapper = new THREE.Group();
       wrapper.add(gltf.scene);
-      wrapper.scale.setScalar(2 / longest);
+      const fittedScale = fitHeight(bounds);
+      wrapper.scale.setScalar(fittedScale);
       const center = bounds.getCenter(new THREE.Vector3());
       gltf.scene.position.sub(
         new THREE.Vector3(center.x, bounds.min.y, center.z),
@@ -185,6 +255,8 @@ export default function ThreeStudio() {
       s.scene.remove(s.model);
       dispose(s.model);
       s.model = wrapper;
+      s.baseScale = fittedScale;
+      applyCharacter(s, football);
       s.scene.add(wrapper);
       s.demo = false;
       s.modelBuffer = buffer;
@@ -237,6 +309,7 @@ export default function ThreeStudio() {
         clip: clip === "" ? -1 : Number(clip),
         camera: s.camera.position.toArray(),
         target: s.controls.target.toArray(),
+        football,
         model: s.modelBuffer ? base64(s.modelBuffer) : null,
       });
       saveBlob(
@@ -273,6 +346,7 @@ export default function ThreeStudio() {
       setName(scene.name);
       setBackground(scene.background);
       s.scene.background.set(scene.background);
+      setFootball(scene.football || null);
       setFormat(scene.format);
       setDuration(scene.duration);
       setPlaying(scene.playing);
@@ -409,12 +483,199 @@ export default function ThreeStudio() {
       </p>
       <div className="three-layout">
         <div
-          className="three-viewport"
+          className={
+            "three-viewport" + (football?.safeZones ? " show-safe-zones" : "")
+          }
           ref={host}
           aria-label="Interactive 3D model preview"
         />
         <aside className="three-controls">
           <fieldset disabled={recording || busy} className="three-fieldset">
+            <label className="field">
+              Content mode
+              <select
+                aria-label="Content mode"
+                value={football ? "football" : "general"}
+                onChange={(e) => {
+                  setFootball(
+                    e.target.value === "football"
+                      ? { ...footballDefaults }
+                      : null,
+                  );
+                  if (engine.current) {
+                    engine.current.camera.position.set(3, 2, 5);
+                    engine.current.controls.target.set(0, 1, 0);
+                  }
+                }}
+              >
+                <option value="general">General 3D</option>
+                <option value="football">Football</option>
+              </select>
+            </label>
+            {football && (
+              <div className="football-presets">
+                <h3>Football environments</h3>
+                <p>
+                  Original stylized 3D sets. Shadows and lighting are rendered
+                  live; fitting uses model bounds, not foot detection. No
+                  photorealism, reflections or automatic kit changes.
+                </p>
+                <label className="field">
+                  Preset category
+                  <select
+                    aria-label="Preset category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                  >
+                    {[
+                      "All",
+                      ...new Set(footballPresets.map((p) => p.category)),
+                    ].map((c) => (
+                      <option key={c}>{c}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  Search football presets
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Tunnel, interview, training…"
+                  />
+                </label>
+                <div
+                  className="football-preset-list"
+                  role="group"
+                  aria-label="Football presets"
+                >
+                  {footballPresets
+                    .filter(
+                      (p) =>
+                        (category === "All" || p.category === category) &&
+                        `${p.name} ${p.workflow}`
+                          .toLowerCase()
+                          .includes(search.toLowerCase()),
+                    )
+                    .map((p) => (
+                      <button
+                        key={p.id}
+                        aria-pressed={football.preset === p.id}
+                        onClick={() => {
+                          patchFootball({ preset: p.id });
+                          if (p.id === "vertical") setFormat("portrait");
+                        }}
+                      >
+                        <span
+                          className="preset-swatch"
+                          style={{ background: p.sky }}
+                        />
+                        <span>
+                          {p.name}
+                          <small>
+                            {p.category} · {p.workflow}
+                          </small>
+                        </span>
+                      </button>
+                    ))}
+                </div>
+                <p>
+                  <strong>{selectedPreset?.name}</strong>
+                  <br />
+                  {selectedPreset?.tip} Suggestions only; animations and audio
+                  are not supplied.
+                </p>
+                {["primary", "secondary"].map((k) => (
+                  <label className="field" key={k}>
+                    {k === "primary"
+                      ? "Primary team colour"
+                      : "Secondary team colour"}
+                    <input
+                      type="color"
+                      value={football[k]}
+                      onChange={(e) => patchFootball({ [k]: e.target.value })}
+                    />
+                  </label>
+                ))}
+                <label className="field">
+                  Lighting intensity
+                  <input
+                    type="range"
+                    min="0.25"
+                    max="2"
+                    step="0.05"
+                    value={football.light}
+                    onChange={(e) =>
+                      patchFootball({ light: Number(e.target.value) })
+                    }
+                  />
+                </label>
+                {["stadium", "neon"].includes(selectedPreset?.layout) && (
+                  <label className="field">
+                    Stylized crowd density
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={football.crowd}
+                      disabled={football.preset === "empty"}
+                      onChange={(e) =>
+                        patchFootball({ crowd: Number(e.target.value) })
+                      }
+                    />
+                  </label>
+                )}
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={football.animated}
+                    onChange={(e) =>
+                      patchFootball({ animated: e.target.checked })
+                    }
+                  />{" "}
+                  Pulse accent lights where present
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={football.safeZones}
+                    onChange={(e) =>
+                      patchFootball({ safeZones: e.target.checked })
+                    }
+                  />{" "}
+                  Show composition safe-zone guide (not exported)
+                </label>
+                <h4>Character fit adjustments</h4>
+                {[
+                  ["x", "Horizontal position", -3, 3, 0.1],
+                  ["z", "Depth position", -3, 3, 0.1],
+                  ["y", "Ground offset", -1, 2, 0.05],
+                  ["rotation", "Rotation", -180, 180, 5],
+                  ["scale", "Scale", 0.25, 2, 0.05],
+                ].map(([k, label, min, max, step]) => (
+                  <label className="field" key={k}>
+                    {label} · {football[k]}
+                    <input
+                      type="range"
+                      min={min}
+                      max={max}
+                      step={step}
+                      value={football[k]}
+                      onChange={(e) =>
+                        patchFootball({ [k]: Number(e.target.value) })
+                      }
+                    />
+                  </label>
+                ))}
+                <button
+                  onClick={() =>
+                    patchFootball({ x: 0, y: 0, z: 0, rotation: 0, scale: 1 })
+                  }
+                >
+                  Reset character fit
+                </button>
+              </div>
+            )}
             <h3>{name}</h3>
             <label className="field">
               Import GLB model
@@ -459,9 +720,10 @@ export default function ThreeStudio() {
               {playing ? "Pause animation" : "Play animation"}
             </button>
             <label className="field">
-              Environment colour
+              Environment colour (general mode)
               <input
                 type="color"
+                disabled={!!football}
                 value={background}
                 onChange={(e) => {
                   setBackground(e.target.value);

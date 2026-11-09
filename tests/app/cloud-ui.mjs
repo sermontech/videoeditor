@@ -155,6 +155,48 @@ try {
     .getByLabel("Open scene file")
     .setInputFiles(".tools/cloud-ui/scene.json");
   await expect(page.getByLabel("Environment colour")).toHaveValue("#172b2e");
+  await page
+    .getByLabel("Content mode", { exact: true })
+    .selectOption("football");
+  await expect(
+    page.getByRole("heading", { name: "Football environments", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Preset category", { exact: true })
+    .selectOption("Stadium");
+  await page
+    .getByLabel("Search football presets", { exact: true })
+    .fill("tunnel");
+  await page.getByRole("button", { name: /Player walkout tunnel/ }).click();
+  await expect(
+    page.getByRole("button", { name: /Player walkout tunnel/ }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByLabel("Primary team colour", { exact: true }).fill("#bb2244");
+  await page.getByLabel("Pulse accent lights where present").check();
+  const footballDownload = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Save scene file", exact: true })
+    .click();
+  await (await footballDownload).saveAs(".tools/cloud-ui/football-scene.json");
+  expect(
+    JSON.parse(fs.readFileSync(".tools/cloud-ui/football-scene.json")).football
+      .preset,
+  ).toBe("tunnel");
+  await page
+    .getByLabel("Content mode", { exact: true })
+    .selectOption("general");
+  await page
+    .getByLabel("Open scene file")
+    .setInputFiles(".tools/cloud-ui/football-scene.json");
+  await expect(page.getByLabel("Content mode", { exact: true })).toHaveValue(
+    "football",
+  );
+  await expect(
+    page.getByLabel("Primary team colour", { exact: true }),
+  ).toHaveValue("#bb2244");
+  await page
+    .locator(".three-viewport")
+    .screenshot({ path: ".tools/cloud-ui/football-tunnel.png" });
   const videoDownload = page.waitForEvent("download", { timeout: 30000 });
   await page
     .getByRole("button", { name: "Export WebM video", exact: true })

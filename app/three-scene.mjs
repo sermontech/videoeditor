@@ -1,3 +1,4 @@
+import { validateFootball } from "./football-presets.mjs";
 export const formats = {
   landscape: [1280, 720],
   portrait: [720, 1280],
@@ -38,6 +39,7 @@ export function validateScene(s) {
       !/^[A-Za-z0-9+/]*={0,2}$/.test(s.model))
   )
     throw Error("Invalid embedded model.");
+  if (s.football != null) validateFootball(s.football);
   return s;
 }
 export function saveBlob(blob, name) {

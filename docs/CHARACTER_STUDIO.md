@@ -111,3 +111,47 @@ roundtrip and actual five-second demo WebM download, followed by full FFmpeg
 decode. Windows performance and imported-rig recording remain to be tested.
 This supersedes the earlier preview-only status; cloud history, MP4, lip-sync,
 AI generation and advanced PRD features remain pending.
+
+## Football Background Preset System — first procedural release
+
+In **3D studio → Content mode → Football**, browse 33 original presets in six
+categories: Studio (5), Stadium (8), Training (5), Lifestyle (7), Stylized (5),
+and Branded (3). Search names or content workflows. All entries build actual
+low-poly scene geometry using shared layout families, not downloaded venue
+photos. Sets include pitch markings, goal nets, cones/mannequins, stands,
+tunnels, benches, lockers, interview panels and other scenario-specific props.
+Palette/layout variations are deliberate; these are stylized prototypes rather
+than photorealistic broadcast-ready venue reconstructions. White studio is a
+simple floor/backdrop approximation, not an infinite curved cyclorama.
+
+Controls: primary/secondary team colours; lighting intensity; stylized crowd
+amount for stadium layouts (empty stadium stays empty); optional pulsing emissive
+accent panels where present; composition safe-zone guide; model horizontal,
+depth and ground offsets, rotation and scale; reset fit. The generic safe-zone
+guide is preview-only and is not a platform-specific overlay or burned into video.
+Choosing the vertical social preset sets the export ratio to 9:16.
+
+Imported models normalize to 1.8 scene units in height and are translated using
+their rest-pose bounds. They share the environment camera, lighting and directional
+shadow map. This preserves the imported mesh/materials; it does not infer feet,
+fix root-motion animation, automatically re-light baked photographic textures,
+or guarantee perfect intersections. Use manual offsets for unusual rigs,
+seated models and equipment. Colour controls affect the environment, not kits.
+
+Presets and adjustments persist inside downloaded scene files and appear in PNG
+and WebM exports. Files created before football settings existed still open.
+Workflow tips are suggestions only: no walkout/celebration clips or licensed
+audio beds are bundled. Supported embedded model animations continue to play.
+No club crests, sponsor trademarks, venue scans or copyrighted imagery included.
+
+Verified: 26 unit tests (all 33 builders, parameter bounds, fitting and scene
+validation), frontend build, headless software-WebGL interaction selecting a
+tunnel, colour editing, saved-scene restore, and actual football WebM export
+with full FFmpeg decode. Intel Iris Xe performance remains a real-device check.
+
+Remaining requirements: photorealistic environments and HDR lighting; accurate
+foot IK/contact and ambient occlusion/reflections; independent time/weather
+controls; animated crowds; moving cameras/preset audio and animation assets;
+custom venue reconstruction; multi-player layouts; licensed official branding;
+kit-aware recolouring. Presets currently apply only to the 3D workspace, not the
+separate 2D card renderer. No backend migration or worker upgrade is needed.

@@ -2911,3 +2911,11 @@ small {
 @media(max-width: 900px) { .three-layout { grid-template-columns: 1fr; } .three-viewport { height: 380px; } }
 .three-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 .three-fieldset:disabled { opacity: .65; }
+.football-presets { border: 1px solid #49655c; padding: 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; }
+.football-preset-list { max-height: 240px; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
+.football-preset-list button { display: flex; text-align: left; gap: 10px; align-items: center; background: transparent; color: inherit; }
+.football-preset-list button[aria-pressed="true"] { border-color: #b8e3cc; background: #29423b; }
+.football-preset-list small { display: block; opacity: .7; }
+.preset-swatch { width: 24px; height: 36px; border-radius: 4px; flex-shrink: 0; border: 1px solid #83978f; }
+.three-viewport { position: relative; }
+.three-viewport.show-safe-zones::after { content: 'COMPOSITION SAFE ZONE'; position: absolute; inset: 10% 12%; border: 1px dashed #ffffffaa; color: #ffffffbb; font-size: 9px; padding: 6px; pointer-events: none; }
