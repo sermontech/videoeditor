@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import "./styles.css";
 import AuthGate from "./AuthGate";
+const ThreeStudio = React.lazy(() => import("./ThreeStudio"));
 import { cloudMode, apiBase, authHeaders } from "./session";
 const request = async (url, options = {}) => {
   const r = await fetch(apiBase + "/api" + url, {
@@ -254,6 +255,7 @@ function App() {
             ["home", LayoutGrid, "Overview"],
             ["projects", Clapperboard, "Projects"],
             ["library", FolderOpen, "Media library"],
+            ["three", Monitor, "3D studio"],
             ["brand", Palette, "Brand kit"],
             ["learning", Sparkles, "Improvement lab"],
           ].map(([id, Icon, label]) => (
@@ -324,6 +326,7 @@ function App() {
                   brand: "Brand kit",
                   learning: "Improvement lab",
                   studio: "Editor",
+                  three: "3D studio",
                 }[view]
               }
             </span>
@@ -1084,6 +1087,11 @@ function App() {
                 </section>
               </div>
             </>
+          )}
+          {view === "three" && (
+            <React.Suspense fallback={<p>Loading 3D workspace…</p>}>
+              <ThreeStudio />
+            </React.Suspense>
           )}
           {view === "library" && (
             <>

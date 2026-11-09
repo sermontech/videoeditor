@@ -67,3 +67,22 @@ Heavy generative video on the user's integrated GPU is not a promised capability
 A local model must pass installation, license and performance checks before its
 controls are exposed as working features. Existing feedback changes editing
 preferences; it does not train AI models.
+
+## 3D preview workspace (next increment)
+
+The sidebar now has **3D studio**. A procedural demo robot provides immediate
+3D animation playback. Import a self-contained, uncompressed GLB (glTF 2.0,
+maximum 30 MB), select its embedded animation clips, pause/play, orbit/pan/zoom,
+change the environment colour, reset the camera or download a PNG screenshot.
+No external model URLs are fetched; metadata rejects URI-based resources.
+Files are browser-session-only: they are not uploaded, persisted, or attached to
+render jobs. Models without clips do not gain new body animations. This does not
+yet support 3D MP4 export, VRM/FBX/MetaHuman, generative poses, lip-sync or physics.
+Three.js loads only when the workspace opens. Large textures/models can still
+stress integrated graphics; use small trusted assets. The GLB limits are basic
+resource safeguards, not a guarantee against all GPU-memory exhaustion.
+
+Verified: 21 unit tests, Vite build, and headless browser checks with software
+WebGL for workspace navigation, canvas creation, pause, invalid GLB rejection,
+PNG download and sign-out cleanup. Imported production character rigs and Intel
+Iris Xe performance still need real-device testing.

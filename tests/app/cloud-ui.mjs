@@ -46,7 +46,13 @@ try {
     ...(process.env.CHROMIUM_PATH
       ? { executablePath: process.env.CHROMIUM_PATH }
       : {}),
-    args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    args: [
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
+      "--use-gl=angle",
+      "--use-angle=swiftshader",
+      "--enable-unsafe-swiftshader",
+    ],
   });
   const page = await browser.newPage({
     viewport: { width: 1280, height: 900 },
@@ -117,6 +123,30 @@ try {
     page.getByRole("heading", { name: "Good stories start here." }),
   ).toBeVisible();
   await page.screenshot({ path: ".tools/cloud-ui/signed-in.png" });
+  await page.getByRole("button", { name: "3D studio", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "3D character studio", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".three-viewport canvas")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Pause animation", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Play animation", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Import GLB model")
+    .setInputFiles({
+      name: "invalid.glb",
+      mimeType: "model/gltf-binary",
+      buffer: Buffer.from("invalid"),
+    });
+  await expect(page.getByRole("alert")).toContainText("Invalid GLB");
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download preview PNG" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("clear-take-3d-preview.png");
+  await page.screenshot({ path: ".tools/cloud-ui/three-studio.png" });
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(
