@@ -1,6 +1,6 @@
 # Clear Take — Creator Studio
 
-A working, local-first, single-user web app built from the existing video-editor workspace. This is the first app iteration, not a production multi-user SaaS.
+A working creator studio with separate local and authenticated cloud modes. **This document describes local mode.** For the new invite-only cloud API, Supabase persistence and Render worker, use [docs/RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md). The cloud services still need dashboard configuration and live acceptance tests.
 
 ## Quick start
 
@@ -98,7 +98,7 @@ The earlier toolchain checks remain available as `npm run test:tools`; those req
 ## Architecture
 
 - `app/main.jsx`, `app/styles.css`: responsive React studio, editor, library, brand settings and improvement journal.
-- `server/index.mjs`: Express API, local storage, media imports/uploads, job management.
+- `server/index.mjs`: fail-closed mode dispatcher. `server/local.mjs`: original local API. `server/cloud.mjs` and `server/worker.mjs`: authenticated cloud API and durable render worker.
 - `server/core.mjs`: deterministic storyboard, validation and quality rules.
 - `server/render.py`: Pillow text composition plus FFmpeg video/audio pipeline.
 - `scripts/dev.mjs`, `scripts/setup-renderer.mjs`: cross-platform developer startup and renderer setup.

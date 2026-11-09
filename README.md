@@ -1,5 +1,9 @@
 # AI Video Editor / Clear Take Studio
 
+## Cloud deployment
+
+See **[Render + Vercel deployment guide](docs/RENDER_DEPLOYMENT.md)** for the authenticated cloud API, background worker, environment variables, invite-only membership and acceptance checks. `Dockerfile` and `render.yaml` configure the two Render services. Both Supabase migrations have been applied to the selected Seler Ecommerce project; hosted services and real-account checks are still pending.
+
 ## Creator app
 
 The repository now includes **Clear Take**, a working creator studio with projects, media uploads, editable storyboards, brand settings, MP4 rendering and a transparent per-generation review loop.

@@ -12,3 +12,8 @@ AI Video Editor/References/*
 .creator/
 dist/
 __pycache__/
+
+# Keep future cloud credentials out of Git
+.env
+.env.*
+!.env.example
