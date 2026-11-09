@@ -8,3 +8,7 @@ AI Video Editor/References/*
 !AI Video Editor/References/.gitkeep
 
 .hyperframes/
+
+.creator/
+dist/
+__pycache__/
