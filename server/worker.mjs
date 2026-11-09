@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import { openAsBlob } from "node:fs";
 import os from "node:os";
@@ -13,6 +13,7 @@ import {
   validateRender,
   dbResult,
 } from "./cloud-shared.mjs";
+import { rendererEnvironment, rendererPython } from "./renderer-process.mjs";
 const config = cloudConfig(process.env, true);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const db = createClient(config.url, config.key, {
@@ -27,6 +28,14 @@ let stopping = false,
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 function stopChild(target = child) {
   if (!target?.pid) return;
+  if (process.platform === "win32") {
+    // Terminate FFmpeg descendants too; killing Python alone leaves them running.
+    spawnSync("taskkill.exe", ["/PID", String(target.pid), "/T", "/F"], {
+      windowsHide: true, stdio: "ignore", timeout: 10000,
+    });
+    target.kill();
+    return;
+  }
   try {
     process.kill(-target.pid, "SIGTERM");
   } catch {
@@ -149,18 +158,13 @@ async function processJob(g, token) {
     await new Promise((resolve, reject) => {
       // Deliberately do not pass Supabase keys or other application secrets into the media parser.
       child = spawn(
-        process.env.PYTHON || "python3",
+        rendererPython(process.env),
         [path.join(root, "server/render.py"), manifest],
         {
           cwd: dir,
-          detached: true,
-          env: {
-            PATH: process.env.PATH,
-            PYTHONPATH:
-              process.env.PYTHONPATH || path.join(root, ".tools/python"),
-            CREATOR_FONT: process.env.CREATOR_FONT || "",
-            LANG: "C.UTF-8",
-          },
+          detached: process.platform !== "win32",
+          windowsHide: true,
+          env: rendererEnvironment(process.env, root),
         },
       );
       jobChild = child;

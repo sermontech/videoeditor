@@ -173,3 +173,7 @@ npm run test:cloud-ui
 ```
 
 Local development defaults to the original local backend. Cloud/Render/production execution refuses that default. `npm start` dispatches by `CREATOR_MODE`; the Docker image always defaults to cloud mode. `npm run start:worker` requires cloud worker configuration.
+
+## Alternative: Windows worker
+
+To avoid a paid Render worker during testing, follow [Windows worker setup](WINDOWS_WORKER.md). Keep the Render Web Service; only the rendering worker moves to your computer. Jobs wait while it is offline.
