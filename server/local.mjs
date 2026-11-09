@@ -144,6 +144,12 @@ app.put("/api/projects/:id", (req, res) => {
       !state.assets.some((a) => a.id === p.audioId && a.kind === "audio")
     )
       throw Error("Audio is not available.");
+    for (const s of p.scenes)
+      if (
+        s.characterId &&
+        !state.assets.some((a) => a.id === s.characterId && a.kind === "image")
+      )
+        throw Error("Character image is not available.");
     p.factsConfirmed = p.factsConfirmed === true;
     state.projects[i] = p;
     save();

@@ -31,7 +31,9 @@ function stopChild(target = child) {
   if (process.platform === "win32") {
     // Terminate FFmpeg descendants too; killing Python alone leaves them running.
     spawnSync("taskkill.exe", ["/PID", String(target.pid), "/T", "/F"], {
-      windowsHide: true, stdio: "ignore", timeout: 10000,
+      windowsHide: true,
+      stdio: "ignore",
+      timeout: 10000,
     });
     target.kill();
     return;
@@ -95,7 +97,7 @@ async function processJob(g, token) {
     const ids = [
       ...new Set(
         [
-          ...(request.scenes || []).map((s) => s.assetId),
+          ...(request.scenes || []).flatMap((s) => [s.assetId, s.characterId]),
           request.audioId,
         ].filter(Boolean),
       ),

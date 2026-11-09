@@ -2887,3 +2887,15 @@ small {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Character mode is a 2D compositor, not generative body animation. */
+.character-controls { padding: 16px; margin: 14px 0; border: 1px solid #55716a; border-radius: 12px; }
+.character-controls p, .character-controls small { font-size: 12px; line-height: 1.5; opacity: .8; }
+.character-layer { position: absolute; bottom: 10%; height: 35%; max-width: 65%; object-fit: contain; z-index: 1; }
+.character-layer.center { left: 50%; transform: translateX(-50%); }
+.character-layer.left { left: 8.5%; }
+.character-layer.right { right: 8.5%; }
+.character-layer.floating { animation: character-float 4s ease-in-out infinite; }
+@keyframes character-float { 0%,100% { margin-bottom: 0; } 50% { margin-bottom: 1%; } }
+.has-character .canvas-body { font-size: calc(var(--copy-size) * .72); max-height: 22%; overflow: hidden; }
+@media (prefers-reduced-motion: reduce) { .character-layer.floating { animation: none; } }

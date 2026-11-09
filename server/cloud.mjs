@@ -238,6 +238,12 @@ app.put("/api/projects/:id", async (req, res) => {
   for (const s of p.scenes)
     if (s.assetId && !a.some((x) => x.id === s.assetId && x.kind !== "audio"))
       throw Error("Visual asset is not available.");
+  for (const s of p.scenes)
+    if (
+      s.characterId &&
+      !a.some((x) => x.id === s.characterId && x.kind === "image")
+    )
+      throw Error("Character image is not available.");
   if (p.audioId && !a.some((x) => x.id === p.audioId && x.kind === "audio"))
     throw Error("Audio is not available.");
   const r = dbResult(

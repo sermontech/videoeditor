@@ -76,6 +76,21 @@ export function validateProject(p) {
   if (!Array.isArray(p.scenes) || p.scenes.length < 1 || p.scenes.length > 12)
     throw Error("Use 1–12 scenes.");
   for (const s of p.scenes) {
+    if (
+      s.characterId != null &&
+      (typeof s.characterId !== "string" || s.characterId.length > 100)
+    )
+      throw Error("Choose a valid character image.");
+    if (
+      s.characterPosition != null &&
+      !["left", "center", "right"].includes(s.characterPosition)
+    )
+      throw Error("Choose left, center or right character placement.");
+    if (
+      s.characterMotion != null &&
+      !["still", "float"].includes(s.characterMotion)
+    )
+      throw Error("Choose still or gentle float motion.");
     if (typeof s.body !== "string" || !s.body.trim() || s.body.length > 350)
       throw Error("Each scene needs 1–350 characters.");
     if (typeof s.title !== "string" || s.title.length > 60)

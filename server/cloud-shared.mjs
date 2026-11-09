@@ -93,6 +93,16 @@ export function validateRender(snapshot, owner, assets) {
   const brand = brandSettings(snapshot.brand);
   const ids = new Map(assets.map((a) => [a.id, a]));
   for (const s of snapshot.scenes) {
+    if (s.characterId) {
+      const c = ids.get(s.characterId);
+      if (
+        !c ||
+        c.owner_id !== owner ||
+        c.kind !== "image" ||
+        !safeObjectPath(owner, c.object_path)
+      )
+        throw Error("Character image is not owned by this user.");
+    }
     if (!s.assetId) continue;
     const a = ids.get(s.assetId);
     if (

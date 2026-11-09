@@ -893,6 +893,81 @@ function App() {
                         ))}
                     </select>
                   </label>
+                  <div className="character-controls">
+                    <h3>2D character animation</h3>
+                    <p>
+                      Reuse an uploaded image. Transparent PNGs work best. No AI
+                      body animation or lip-sync.
+                    </p>
+                    <label className="field">
+                      Character image
+                      <select
+                        value={scene.characterId || ""}
+                        onChange={(e) =>
+                          patchScene({ characterId: e.target.value || null })
+                        }
+                      >
+                        <option value="">No character</option>
+                        {data.assets
+                          .filter((a) => a.kind === "image")
+                          .map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.name}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    {scene.characterId && (
+                      <>
+                        <label className="field">
+                          Placement
+                          <select
+                            value={scene.characterPosition || "center"}
+                            onChange={(e) =>
+                              patchScene({ characterPosition: e.target.value })
+                            }
+                          >
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                          </select>
+                        </label>
+                        <label className="field">
+                          Motion
+                          <select
+                            value={scene.characterMotion || "still"}
+                            onChange={(e) =>
+                              patchScene({ characterMotion: e.target.value })
+                            }
+                          >
+                            <option value="still">Still</option>
+                            <option value="float">Gentle float (2D)</option>
+                          </select>
+                        </label>
+                        <button
+                          className="text-btn"
+                          onClick={() =>
+                            patch({
+                              scenes: project.scenes.map((s) => ({
+                                ...s,
+                                characterId: scene.characterId,
+                                characterPosition:
+                                  scene.characterPosition || "center",
+                                characterMotion:
+                                  scene.characterMotion || "still",
+                              })),
+                            })
+                          }
+                        >
+                          Use this character in all scenes
+                        </button>
+                      </>
+                    )}
+                    <small>
+                      Only upload characters and likenesses you have permission
+                      to use. Preview is approximate; review the exported video.
+                    </small>
+                  </div>
                   <button
                     className="text-btn"
                     onClick={() => uploadRef.current.click()}
@@ -1651,9 +1726,12 @@ function App() {
 }
 function Preview({ scene, project, data, index }) {
   const asset = data.assets.find((a) => a.id === scene.assetId);
+  const character = data.assets.find((a) => a.id === scene.characterId);
   return (
     <div
-      className={"video-canvas " + project.format}
+      className={
+        "video-canvas " + project.format + (character ? " has-character" : "")
+      }
       style={{
         background: data.brand.background,
         color: data.brand.foreground,
@@ -1678,6 +1756,17 @@ function Preview({ scene, project, data, index }) {
             alt="Scene background"
           />
         ))}
+      {character && (
+        <img
+          alt="Character layer"
+          src={character.url}
+          className={
+            "character-layer " +
+            (scene.characterPosition || "center") +
+            (scene.characterMotion === "float" ? " floating" : "")
+          }
+        />
+      )}
       <div className="canvas-content">
         <div className="canvas-brand">{data.brand.name.toUpperCase()}</div>
         <div className="canvas-rule" />
