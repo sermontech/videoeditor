@@ -1,3 +1,4 @@
+import ResearchStudio from "./ResearchStudio.jsx";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -256,6 +257,7 @@ function App() {
             ["projects", Clapperboard, "Projects"],
             ["library", FolderOpen, "Media library"],
             ["three", Monitor, "3D studio"],
+            ["research", Search, "Research & audio"],
             ["brand", Palette, "Brand kit"],
             ["learning", Sparkles, "Improvement lab"],
           ].map(([id, Icon, label]) => (
@@ -327,6 +329,7 @@ function App() {
                   learning: "Improvement lab",
                   studio: "Editor",
                   three: "3D studio",
+                  research: "Research & audio",
                 }[view]
               }
             </span>
@@ -1088,6 +1091,7 @@ function App() {
               </div>
             </>
           )}
+          {view === "research" && <ResearchStudio />}
           {view === "three" && (
             <React.Suspense fallback={<p>Loading 3D workspace…</p>}>
               <ThreeStudio />

@@ -1,3 +1,4 @@
+import { avatarFixture } from "./avatar-fixture.mjs";
 // Isolated frontend session test with mocked Supabase and API endpoints. No real account is created.
 import { chromium, expect } from "@playwright/test";
 import http from "node:http";
@@ -94,6 +95,24 @@ try {
   });
   await page.route("https://api.example.com/**", async (route) => {
     expect(route.request().headers().authorization).toBe("Bearer " + token);
+    if (route.request().url().includes("/api/discovery/"))
+      return route.fulfill({
+        json: {
+          kind: "facts",
+          query: "Champions League",
+          retrievedAt: "2026-11-09T00:00:00Z",
+          results: [
+            {
+              id: "1",
+              title: "Test Champions League source",
+              summary: "Synthetic test excerpt, not match reporting.",
+              url: "https://en.wikipedia.org/?curid=1",
+              warning: "Verify against primary reports.",
+            },
+          ],
+        },
+      });
+
     return route.fulfill({
       json: {
         mode: "cloud",
@@ -123,6 +142,42 @@ try {
     page.getByRole("heading", { name: "Good stories start here." }),
   ).toBeVisible();
   await page.screenshot({ path: ".tools/cloud-ui/signed-in.png" });
+  await page
+    .getByRole("button", { name: "Research & audio", exact: true })
+    .click();
+  await page
+    .getByLabel("Research query", { exact: true })
+    .fill("Champions League");
+  await page
+    .getByRole("button", { name: "Search sources", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Test Champions League source",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Save source to research pack", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Research pack · 1 saved sources",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Editorial notes / script outline", { exact: true })
+    .fill("Verify match scores before analysis.");
+  const packDownload = page.waitForEvent("download");
+  await page
+    .getByRole("button", {
+      name: "Export research pack & credits",
+      exact: true,
+    })
+    .click();
+  await (await packDownload).saveAs(".tools/cloud-ui/research-pack.json");
+
   await page.getByRole("button", { name: "3D studio", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "3D character studio", exact: true }),
@@ -134,7 +189,7 @@ try {
   await expect(
     page.getByRole("button", { name: "Play animation", exact: true }),
   ).toBeVisible();
-  await page.getByLabel("Import GLB model").setInputFiles({
+  await page.getByLabel("Import GLB / VRM model").setInputFiles({
     name: "invalid.glb",
     mimeType: "model/gltf-binary",
     buffer: Buffer.from("invalid"),
@@ -173,6 +228,60 @@ try {
   ).toHaveAttribute("aria-pressed", "true");
   await page.getByLabel("Primary team colour", { exact: true }).fill("#bb2244");
   await page.getByLabel("Pulse accent lights where present").check();
+  await page
+    .getByText("Official kit catalogue · rights intake", { exact: true })
+    .click();
+  const intake = page.locator("details").filter({
+    has: page.getByRole("heading", {
+      name: "Official kit rights register",
+      exact: true,
+    }),
+  });
+  await intake
+    .getByLabel("Club / national team", { exact: true })
+    .fill("Test club");
+  await intake.getByLabel("Season / edition", { exact: true }).fill("2026/27");
+  await intake.getByLabel("Kit variant", { exact: true }).fill("Home");
+  await intake
+    .getByRole("button", { name: "Add unverified kit record", exact: true })
+    .click();
+  await expect(
+    intake.getByText("Unverified — official use blocked", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    intake.getByText("0 verified official assets available", { exact: true }),
+  ).toBeVisible();
+  const intakeDownload = page.waitForEvent("download");
+  await intake
+    .getByRole("button", { name: "Export kit intake register", exact: true })
+    .click();
+  await (await intakeDownload).saveAs(".tools/cloud-ui/kit-intake.json");
+  await intake
+    .getByLabel("Import kit intake JSON", { exact: true })
+    .setInputFiles({
+      name: "forged.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(
+        JSON.stringify({
+          version: 1,
+          records: [
+            {
+              id: "forged",
+              team: "Test",
+              season: "2026",
+              variant: "Home",
+              status: "verified",
+            },
+          ],
+        }),
+      ),
+    });
+  await expect(intake.getByRole("alert")).toContainText(
+    "cannot claim verified licensing",
+  );
+  await page
+    .getByText("Official kit catalogue · rights intake", { exact: true })
+    .click();
   await page.getByLabel("Apply football kit", { exact: true }).check();
   await page
     .getByLabel("Jersey pattern", { exact: true })
@@ -236,6 +345,74 @@ try {
     1000,
   );
   await page.screenshot({ path: ".tools/cloud-ui/three-studio.png" });
+  await page.getByLabel("Import GLB / VRM model").setInputFiles({
+    name: "test.vrm",
+    mimeType: "model/gltf-binary",
+    buffer: Buffer.from(avatarFixture()),
+  });
+  await expect(
+    page.getByRole("heading", {
+      name: "Model inspection · VRM 1",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Synthetic test avatar", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByLabel("Lip-sync audio", { exact: true }),
+  ).toBeEnabled();
+  // Original PCM tone exercises actual Web Audio playback, not speech accuracy.
+  const wav = Buffer.alloc(44 + 16000 * 2 * 3);
+  wav.write("RIFF");
+  wav.writeUInt32LE(wav.length - 8, 4);
+  wav.write("WAVEfmt ", 8);
+  wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20);
+  wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(16000, 24);
+  wav.writeUInt32LE(32000, 28);
+  wav.writeUInt16LE(2, 32);
+  wav.writeUInt16LE(16, 34);
+  wav.write("data", 36);
+  wav.writeUInt32LE(wav.length - 44, 40);
+  for (let i = 0; i < 48000; i++)
+    wav.writeInt16LE(
+      Math.round(Math.sin((i * 2 * Math.PI * 440) / 16000) * 8000),
+      44 + i * 2,
+    );
+  await page
+    .getByLabel("Lip-sync audio", { exact: true })
+    .setInputFiles({ name: "test.wav", mimeType: "audio/wav", buffer: wav });
+  await page
+    .getByRole("button", { name: "Play animation", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Play lip-sync audio", exact: true })
+    .click();
+  await expect(
+    page.getByText("Lip-sync audio playing", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Stop lip-sync audio", exact: true })
+    .click();
+  await expect(
+    page.getByText("Lip-sync audio stopped", { exact: true }),
+  ).toBeVisible();
+  const vrmDownload = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Save scene file", exact: true })
+    .click();
+  await (await vrmDownload).saveAs(".tools/cloud-ui/avatar-scene.json");
+  await page
+    .getByLabel("Open scene file")
+    .setInputFiles(".tools/cloud-ui/avatar-scene.json");
+  await expect(
+    page.getByRole("heading", {
+      name: "Model inspection · VRM 1",
+      exact: true,
+    }),
+  ).toBeVisible();
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(

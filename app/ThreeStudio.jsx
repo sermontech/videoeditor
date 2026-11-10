@@ -1,3 +1,7 @@
+import KitCatalogue from "./KitCatalogue.jsx";
+import LipSyncControls from "./LipSyncControls.jsx";
+import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
+import { modelReport } from "./model-report.mjs";
 import {
   demoMotions,
   cameraMoves,
@@ -54,6 +58,7 @@ export default function ThreeStudio() {
   const [recording, setRecording] = useState(false),
     [notice, setNotice] = useState("");
   const capture = useRef(null);
+  const [report, setReport] = useState(null);
   const [motion, setMotion] = useState({ ...motionDefaults });
   useEffect(() => {
     const s = engine.current;
@@ -287,6 +292,8 @@ export default function ThreeStudio() {
       if (state.playing) {
         state.time += delta;
         state.mixer?.update(delta);
+        state.lipSyncTick?.();
+
         if (state.demo) {
           const p = poseAt(state.motion.demo, state.time * state.motion.speed);
           state.leftShoulder.rotation.set(p.leftArm, 0, p.armSpread);
@@ -296,6 +303,7 @@ export default function ThreeStudio() {
           state.model.position.y = state.anchor[1] + p.bounce;
         }
       }
+      state.vrm?.update(state.playing ? delta : 0);
       state.environment?.update(state.time);
       if (state.motion.camera !== "static" && state.cameraBase) {
         camera.position.fromArray(
@@ -332,20 +340,34 @@ export default function ThreeStudio() {
     setBusy(true);
     setError("");
     try {
-      if (
-        !file.name.toLowerCase().endsWith(".glb") ||
-        file.size > 30 * 1024 * 1024
-      )
-        throw Error("Choose a self-contained .glb file up to 30 MB.");
+      if (!/\.(glb|vrm)$/i.test(file.name) || file.size > 30 * 1024 * 1024)
+        throw Error("Choose a self-contained .glb or .vrm file up to 30 MB.");
       const buffer = await file.arrayBuffer();
-      validateGlb(buffer);
+      const metadata = validateGlb(buffer);
+      if (
+        file.name.toLowerCase().endsWith(".vrm") &&
+        !metadata.extensions?.VRMC_vrm &&
+        !metadata.extensions?.VRM
+      )
+        throw Error("This file has no VRM avatar metadata.");
       const manager = new THREE.LoadingManager();
       manager.setURLModifier((url) => {
         if (!url.startsWith("blob:"))
           throw Error("External model resources are blocked.");
         return url;
       });
-      const gltf = await new GLTFLoader(manager).parseAsync(buffer, "");
+      const loader = new GLTFLoader(manager);
+      loader.register((parser) => new VRMLoaderPlugin(parser));
+      const gltf = await loader.parseAsync(buffer, "");
+      const vrm = gltf.userData.vrm;
+      if (vrm) {
+        VRMUtils.rotateVRM0(vrm);
+        vrm.update(0);
+      }
+      if ((metadata.extensions?.VRMC_vrm || metadata.extensions?.VRM) && !vrm) {
+        dispose(gltf.scene);
+        throw Error("VRM avatar could not be initialized.");
+      }
       if (token !== serial.current || !engine.current) {
         dispose(gltf.scene);
         return;
@@ -377,6 +399,8 @@ export default function ThreeStudio() {
       s.scene.add(wrapper);
       s.demo = false;
       s.modelBuffer = buffer;
+      s.vrm = vrm || null;
+      setReport(modelReport(metadata, buffer.byteLength));
       s.mixer = new THREE.AnimationMixer(gltf.scene);
       s.clips = gltf.animations;
       setClips(
@@ -812,6 +836,7 @@ export default function ThreeStudio() {
                 </button>
               </div>
             )}
+            <KitCatalogue />
             <KitControls
               kit={kit}
               onChange={setKit}
@@ -819,12 +844,50 @@ export default function ThreeStudio() {
               demo={engine.current?.demo !== false}
             />
             <h3>{name}</h3>
+            <LipSyncControls
+              engine={engine}
+              revision={modelRevision}
+              playing={playing}
+              recording={recording}
+            />
+            {report && (
+              <div
+                className="football-presets"
+                aria-label="Model inspection report"
+              >
+                <h3>Model inspection · {report.format}</h3>
+                {report.title && <p>{report.title}</p>}
+                <p>
+                  {report.megabytes} MB · {report.meshes} meshes ·{" "}
+                  {report.materials} materials ·{" "}
+                  {report.vertices.toLocaleString()} vertices · {report.skins}{" "}
+                  skins · {report.animations} clips · {report.morphTargets}{" "}
+                  morph targets
+                </p>
+                <p>{report.permissions}</p>
+                {report.warnings.map((w) => (
+                  <p key={w}>{w}</p>
+                ))}
+                <button
+                  onClick={() =>
+                    saveBlob(
+                      new Blob([JSON.stringify(report, null, 2)], {
+                        type: "application/json",
+                      }),
+                      "model-report.json",
+                    )
+                  }
+                >
+                  Download model report
+                </button>
+              </div>
+            )}
             <label className="field">
-              Import GLB model
+              Import GLB / VRM model
               <input
-                aria-label="Import GLB model"
+                aria-label="Import GLB / VRM model"
                 type="file"
-                accept=".glb"
+                accept=".glb,.vrm"
                 disabled={busy}
                 onChange={(e) => {
                   load(e.target.files[0]);
@@ -835,8 +898,9 @@ export default function ThreeStudio() {
             <small>
               Embedded resources only, up to 30 MB. Files stay in this browser
               session unless you download a scene file; they are never uploaded
-              here. Use only models you have permission to use. VRM, FBX and
-              MetaHuman are not supported yet.
+              here. Use only models you have permission to use. VRM avatars are
+              supported; FBX and MetaHuman are not. Imported rigs still need
+              their own clips; no automatic motion retargeting.
             </small>
             <div className="football-presets">
               <h3>Motion and camera</h3>

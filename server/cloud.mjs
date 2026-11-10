@@ -1,3 +1,4 @@
+import { discoveryRouter } from "./discovery.mjs";
 import express from "express";
 import multer from "multer";
 import { rateLimit } from "express-rate-limit";
@@ -97,6 +98,7 @@ app.use("/api", async (req, res, next) => {
   }
 });
 app.use(express.json({ limit: "300kb" }));
+app.use("/api/discovery", discoveryRouter());
 const uid = (req) => req.user.id;
 const profile = async (req) => {
   dbResult(

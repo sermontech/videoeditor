@@ -16,7 +16,8 @@
     "start:cloud": "node server/index.mjs",
     "test:cloud": "node tests/app/cloud-integration.mjs",
     "test:cloud-ui": "node tests/app/cloud-ui.mjs",
-    "convert:3d": "node scripts/convert-3d.mjs"
+    "convert:3d": "node scripts/convert-3d.mjs",
+    "inspect:model": "node scripts/inspect-model.mjs"
   },
   "repository": {
     "type": "git",
@@ -30,6 +31,8 @@
   },
   "homepage": "https://github.com/sermontech/videoeditor#readme",
   "dependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "@pixiv/three-vrm": "3.5.5",
     "@remotion/cli": "4.0.541",
     "@sparticuz/chromium": "153.0.0",
     "@supabase/supabase-js": "2.119.0",
@@ -42,7 +45,8 @@
     "react-dom": "19.3.1",
     "remotion": "4.0.541",
     "three": "0.187.0",
-    "vite": "8.3.6"
+    "vite": "8.3.6",
+    "wawa-lipsync": "0.0.2"
   },
   "overrides": {
     "undici": "7.30.1"
