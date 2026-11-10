@@ -59,7 +59,7 @@ and browser interaction with the new controls remain to be verified.
 - Licensed music/SFX library and dialogue tools
 - 4:5, WebM and GIF; 5–30 second character-focused projects
 - Direct social publishing with per-platform OAuth/API permissions
-- 3D formats, VRM/Ready Player Me/MetaHuman adapters and optional 3D renderer
+- Additional 3D formats, Ready Player Me/MetaHuman adapters and optional 3D renderer
 - Multi-character composition, physics-aware interactions and identity evaluation
 - Generation history/refinement, export/share metrics, retention and billing
 
@@ -77,7 +77,7 @@ change the environment colour, reset the camera or download a PNG screenshot.
 No external model URLs are fetched; metadata rejects URI-based resources.
 Files are browser-session-only: they are not uploaded, persisted, or attached to
 render jobs. Models without clips do not gain new body animations. This does not
-yet support 3D MP4 export, VRM/FBX/MetaHuman, generative poses, lip-sync or physics.
+yet support integrated 3D MP4 export, FBX/MetaHuman, generative poses or lip-sync. VRM support is described below.
 Three.js loads only when the workspace opens. Large textures/models can still
 stress integrated graphics; use small trusted assets. The GLB limits are basic
 resource safeguards, not a guarantee against all GPU-memory exhaustion.
@@ -224,3 +224,74 @@ Verified on Linux: 31 units, browser celebration/orbit settings restoration and
 WebM capture, real WebM→MP4 conversion with and without audio, full FFmpeg decode,
 and an automated overwrite-protection test. Windows execution still requires a
 real-device check. Browser conversion guidance is in the 3D export section.
+
+
+## VRM avatars and model inspection
+
+The 3D studio now imports self-contained `.vrm` binary files as well as `.glb`.
+The pinned MIT-licensed `@pixiv/three-vrm` 3.5.5 loader initializes VRM avatars,
+normalizes legacy VRM orientation and updates the avatar runtime during playback.
+Existing 30 MB/resource/geometry limits still apply. Scene files preserve the
+original bytes, including VRM extensions. Imports remain browser-local.
+
+A downloadable inspection report shows format, file size, mesh/material/skin
+counts, vertex references, morph-target counts, embedded clips and missing UV
+warnings. These counts are estimates, not a GPU benchmark or license clearance.
+Check the avatar author's actual permissions before publishing.
+
+For local command-line inspection:
+
+```powershell
+npm run inspect:model -- "C:/path/to/avatar.vrm"
+```
+
+Pinned MIT-licensed `@gltf-transform/core` 4.5.1 performs an additional structural
+read for extension-free GLBs. Extension-bearing files receive metadata inspection
+only. No automatic optimization/rewrite is performed, to avoid stripping VRM
+metadata. The unused functions package was removed rather than shipping unused
+optimization dependencies. Avatar/model licenses are separate from code licenses.
+
+Validation: 33 unit tests and production build pass. The mocked-auth browser
+suite passes with real software WebGL, including an original minimal synthetic
+VRM 1 import and portable scene round-trip; local GLB and VRM inspection commands
+were exercised. This does not validate realistic skinned avatars, legacy VRM 0,
+MToon textures, spring-bone behavior or performance on the user's Windows Iris Xe.
+No rig retargeting, speech generation or audio-driven lip-sync is included yet.
+The lazy 3D bundle is about 838 kB minified and still triggers the size warning.
+
+## Local audio-driven VRM lip-sync preview
+
+`wawa-lipsync` 0.0.2 (MIT, exact-pinned) now analyzes local audio with Web Audio
+and maps approximate visemes to available VRM `aa`, `ee`, `ih`, `oh`, `ou`
+expressions. Import a compatible VRM, choose **Lip-sync audio**, ensure animation
+is playing, then click **Play lip-sync audio**. WAV/MP3/M4A/OGG/WebM files up to
+30 MB are accepted; decoding depends on the browser. No audio is uploaded and
+no microphone permissions are requested. Music and noise can produce incorrect
+mouth shapes: this is not transcript-aligned phoneme detection.
+
+Stop, animation pause, recording start, avatar replacement and studio unmount
+stop the preview. Replacing/unmounting releases the blob URL and AudioContext.
+The package lacks public resume/disposal methods, so a small documented adapter
+accesses those runtime properties of the pinned version; upgrades need review.
+
+This is **preview only**: audio is not included in scene JSON, and starting WebM
+recording stops it. It is not a lip-synced video export workflow. Text-to-speech,
+Kokoro model installation and real Windows performance testing remain pending.
+The earlier statement that no audio-driven lip-sync exists is superseded by this
+limited preview integration; production-quality facial animation is not claimed.
+
+Validation: 36 unit tests pass, including viseme bounds, silence/reset, available
+expression filtering and analyzer lifecycle. The browser integration suite uses
+real Web Audio with an original PCM test tone and a synthetic VRM with empty
+expression definitions to exercise import, audio play/stop and scene restoration.
+It does not validate visible mouth deformation or speech accuracy on a real avatar.
+Production build passes (the approximately 846 kB 3D bundle size warning remains).
+
+## Official kit priority
+
+Official catalogue, automatic dressing, cloth/contact and practical local
+photorealistic video are core priorities, not delivered by the previews above.
+See [Official kit priority gates](OFFICIAL_KIT_PRIORITIES.md) for requirements,
+remaining dependencies and acceptance evidence. The studio now includes a local
+rights-intake register; it starts with zero verified assets and cannot approve
+licenses or load official kits. Export intake JSON before leaving the studio.

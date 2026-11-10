@@ -1,3 +1,4 @@
+import { discoveryRouter } from "./discovery.mjs";
 import express from "express";
 import multer from "multer";
 import fs from "node:fs";
@@ -82,6 +83,7 @@ save();
 const app = express();
 app.disable("x-powered-by");
 app.use(express.json({ limit: "300kb" }));
+app.use("/api/discovery", discoveryRouter());
 app.use(
   "/media",
   express.static(path.join(data, "media"), {
