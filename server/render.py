@@ -39,7 +39,7 @@ for i,s in enumerate(job['scenes']):
  heading_size=28
  while d.textlength(s['title'],font=font(heading_size))>width and heading_size>14:heading_size-=1
  d.text((margin,H*.20),s['title'],font=font(heading_size),fill=brand['accent'])
- size=brand['fontSize'];maxheight=H*.45
+ size=brand['fontSize'];maxheight=H*(.20 if s.get('characterId') else .45)
  while True:
   lines=wrap(d,s['body'],font(size),width)
   if len(lines)*size*1.38<=maxheight or size<=30:break
@@ -54,7 +54,22 @@ for i,s in enumerate(job['scenes']):
  if video:overlay.save(png);cmd=[ff,'-v','error','-y','-stream_loop','-1','-protocol_whitelist','file,pipe,crypto,data','-i',video,'-loop','1','-i',str(png),'-filter_complex',f'[0:v]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1[v];[v][1:v]overlay=0:0','-an']
  else:bg.paste(overlay,(0,0),overlay);bg.save(png);cmd=[ff,'-v','error','-y','-loop','1','-i',str(png)]
  cmd+=['-t',str(s['duration']),'-r','30','-c:v','libx264','-preset','veryfast','-crf','23','-pix_fmt','yuv420p','-threads','2',str(clip)]
- subprocess.run(cmd,check=True,timeout=120);clips.append(clip);report.append({'scene':i+1,'fontSize':size,'lines':len(lines),'fitted':True})
+ subprocess.run(cmd,check=True,timeout=120)
+ character=assets.get(s.get('characterId'))
+ if s.get('characterId') and (not character or character['kind']!='image'):raise ValueError('Character image is unavailable')
+ if character:
+  # Preserve the uploaded artwork and alpha. No identity synthesis or body animation.
+  pic=ImageOps.exif_transpose(Image.open(pathlib.Path(job['mediaDir'])/character['filename'])).convert('RGBA')
+  pic.thumbnail((int(W*.65),int(H*.35)))
+  character_png=work/f'character{i}.png';pic.save(character_png)
+  position=s.get('characterPosition','center');motion=s.get('characterMotion','still')
+  x={'left':str(int(W*.085)),'center':'(W-w)/2','right':f'W-w-{int(W*.085)}'}.get(position)
+  if x is None or motion not in ('still','float'):raise ValueError('Invalid character controls')
+  y=f'H-h-{int(H*.10)}'+(f'-{int(H*.01)}*(1-cos(2*PI*t/4))/2' if motion=='float' else '')
+  composed=work/f'character-clip{i}.mp4'
+  subprocess.run([ff,'-v','error','-y','-i',str(clip),'-loop','1','-i',str(character_png),'-filter_complex',f"[0:v][1:v]overlay=x='{x}':y='{y}':shortest=1",'-t',str(s['duration']),'-an','-r','30','-c:v','libx264','-preset','veryfast','-crf','23','-pix_fmt','yuv420p','-threads','2',str(composed)],check=True,timeout=120)
+  clip=composed
+ clips.append(clip);report.append({'scene':i+1,'fontSize':size,'lines':len(lines),'fitted':True})
  print(json.dumps({'progress':int((i+1)/len(job['scenes'])*85)}),flush=True)
 concat=work/'clips.txt';concat.write_text(''.join(f"file '{p.name}'\n" for p in clips))
 joined=work/'joined.mp4';subprocess.run([ff,'-v','error','-y','-f','concat','-safe','0','-i',str(concat),'-c','copy',str(joined)],check=True,timeout=60)

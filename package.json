@@ -11,7 +11,12 @@
     "test:app": "node --test tests/app/*.test.mjs",
     "test:browser": "npm run build && node tests/app/browser.mjs",
     "setup:render": "node scripts/setup-renderer.mjs",
-    "test:tools": "bash scripts/test-tools.sh"
+    "test:tools": "bash scripts/test-tools.sh",
+    "start:worker": "node server/worker.mjs",
+    "start:cloud": "node server/index.mjs",
+    "test:cloud": "node tests/app/cloud-integration.mjs",
+    "test:cloud-ui": "node tests/app/cloud-ui.mjs",
+    "convert:3d": "node scripts/convert-3d.mjs"
   },
   "repository": {
     "type": "git",
@@ -27,13 +32,16 @@
   "dependencies": {
     "@remotion/cli": "4.0.541",
     "@sparticuz/chromium": "153.0.0",
+    "@supabase/supabase-js": "2.119.0",
     "express": "5.3.0",
+    "express-rate-limit": "8.7.3",
     "hyperframes": "0.9.26",
     "lucide-react": "1.70.0",
     "multer": "2.5.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "remotion": "4.0.541",
+    "three": "0.187.0",
     "vite": "8.3.6"
   },
   "overrides": {

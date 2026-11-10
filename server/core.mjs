@@ -7,12 +7,47 @@ export const defaults = {
   pace: 1,
 };
 export function storyboard(script, pace = 1) {
-  const sentences = script.trim().match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
+  // Explicit headings take precedence over automatic sentence splitting.
+  // Accept plain or Markdown headings and the common dash variants.
+  const heading =
+    /^\s*(?:#{1,6}\s+)?(?:\*\*)?Scene\s+(\d+)\s*(?:[–—:\-]\s*(.*?))?(?:\*\*)?\s*$/gim;
+  const trimmed = script.trim();
+  const text =
+    trimmed.startsWith("(") && trimmed.endsWith(")")
+      ? trimmed.slice(1, -1).trim()
+      : trimmed;
+  const headings = [...text.matchAll(heading)];
   const pieces = [];
-  for (const sentence of sentences) {
-    const words = sentence.trim().split(/\s+/);
-    for (let i = 0; i < words.length; i += 25)
-      pieces.push(words.slice(i, i + 25).join(" "));
+  const titles = [];
+  if (headings.length) {
+    if (text.slice(0, headings[0].index).trim())
+      throw Error("Put all script text under a numbered Scene heading.");
+    for (const [i, match] of headings.entries()) {
+      if (Number(match[1]) !== i + 1)
+        throw Error(
+          "Number your scene headings consecutively, starting at Scene 1.",
+        );
+      const title = (match[2] || `Scene ${i + 1}`).replace(/\*\*$/, "").trim();
+      const body = text
+        .slice(
+          match.index + match[0].length,
+          headings[i + 1]?.index ?? text.length,
+        )
+        .trim();
+      if (!body || body.length > 350)
+        throw Error(`Scene ${i + 1} needs 1–350 characters of body text.`);
+      if (title.length > 60)
+        throw Error(`Scene ${i + 1}'s heading must be 60 characters or fewer.`);
+      titles.push(title);
+      pieces.push(body);
+    }
+  } else {
+    const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
+    for (const sentence of sentences) {
+      const words = sentence.trim().split(/\s+/);
+      for (let i = 0; i < words.length; i += 25)
+        pieces.push(words.slice(i, i + 25).join(" "));
+    }
   }
   if (pieces.length > 12)
     throw Error(
@@ -21,11 +56,12 @@ export function storyboard(script, pace = 1) {
   return pieces.map((body, i) => ({
     id: crypto.randomUUID(),
     title:
-      i === 0
+      titles[i] ??
+      (i === 0
         ? "THE HOOK"
         : i === pieces.length - 1
           ? "THE TAKEAWAY"
-          : `THE STORY / ${String(i + 1).padStart(2, "0")}`,
+          : `THE STORY / ${String(i + 1).padStart(2, "0")}`),
     body,
     duration: Math.max(
       4,
@@ -40,6 +76,21 @@ export function validateProject(p) {
   if (!Array.isArray(p.scenes) || p.scenes.length < 1 || p.scenes.length > 12)
     throw Error("Use 1–12 scenes.");
   for (const s of p.scenes) {
+    if (
+      s.characterId != null &&
+      (typeof s.characterId !== "string" || s.characterId.length > 100)
+    )
+      throw Error("Choose a valid character image.");
+    if (
+      s.characterPosition != null &&
+      !["left", "center", "right"].includes(s.characterPosition)
+    )
+      throw Error("Choose left, center or right character placement.");
+    if (
+      s.characterMotion != null &&
+      !["still", "float"].includes(s.characterMotion)
+    )
+      throw Error("Choose still or gentle float motion.");
     if (typeof s.body !== "string" || !s.body.trim() || s.body.length > 350)
       throw Error("Each scene needs 1–350 characters.");
     if (typeof s.title !== "string" || s.title.length > 60)

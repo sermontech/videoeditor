@@ -1,0 +1,12 @@
+.git
+node_modules
+.creator
+.tools
+.env
+.env.*
+dist
+AI Video Editor
+supabase
+app
+tests
+*.log

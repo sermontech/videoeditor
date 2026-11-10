@@ -1,0 +1,40 @@
+# Create via Render > New > Blueprint after this branch is pushed.
+# Both services use the same image. Only the worker receives the privileged key.
+services:
+  - type: web
+    name: clear-take-api
+    runtime: docker
+    branch: arena/edccf97e-videoeditor
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: node server/index.mjs
+    healthCheckPath: /healthz
+    plan: starter
+    envVars:
+      - key: CREATOR_MODE
+        value: cloud
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: CREATOR_ALLOWED_ORIGINS
+        sync: false
+  - type: worker
+    name: clear-take-worker
+    runtime: docker
+    branch: arena/edccf97e-videoeditor
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: node server/worker.mjs
+    plan: standard
+    envVars:
+      - key: CREATOR_MODE
+        value: cloud
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false

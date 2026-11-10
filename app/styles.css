@@ -2819,3 +2819,103 @@ small {
 .scene-order .text-btn {
   font-size: 9px;
 }
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 30px;
+  background: radial-gradient(ellipse at top, #382944, #141419 65%);
+}
+.auth-card {
+  width: 440px;
+  max-width: 100%;
+  background: #201c28;
+  border: 1px solid #483753;
+  border-radius: 16px;
+  padding: 35px;
+}
+.auth-card .brand-logo {
+  margin-bottom: 38px;
+}
+.auth-card h1 {
+  font-size: 28px;
+}
+.auth-card > p {
+  color: #a897b5;
+  line-height: 1.7;
+  margin: 14px 0 28px;
+}
+.auth-card > .field {
+  font-size: 12px;
+}
+.auth-card input {
+  font-size: 14px;
+}
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+  margin: 19px 0;
+}
+.auth-card > small {
+  display: block;
+  line-height: 1.7;
+  color: #8d7d9b;
+}
+.cloud-account {
+  position: fixed;
+  z-index: 25;
+  bottom: 9px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #282331;
+  border: 1px solid #4c3a5e;
+  font-size: 10px;
+  box-shadow: 0 4px 12px #0004;
+}
+.cloud-account button {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #d9c2ef;
+}
+.cloud-account > span {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Character mode is a 2D compositor, not generative body animation. */
+.character-controls { padding: 16px; margin: 14px 0; border: 1px solid #55716a; border-radius: 12px; }
+.character-controls p, .character-controls small { font-size: 12px; line-height: 1.5; opacity: .8; }
+.character-layer { position: absolute; bottom: 10%; height: 35%; max-width: 65%; object-fit: contain; z-index: 1; }
+.character-layer.center { left: 50%; transform: translateX(-50%); }
+.character-layer.left { left: 8.5%; }
+.character-layer.right { right: 8.5%; }
+.character-layer.floating { animation: character-float 4s ease-in-out infinite; }
+@keyframes character-float { 0%,100% { margin-bottom: 0; } 50% { margin-bottom: 1%; } }
+.has-character .canvas-body { font-size: calc(var(--copy-size) * .72); max-height: 22%; overflow: hidden; }
+@media (prefers-reduced-motion: reduce) { .character-layer.floating { animation: none; } }
+.three-studio { padding: 24px; max-width: 1500px; margin: auto; }
+.three-studio > p { max-width: 800px; line-height: 1.6; }
+.three-layout { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 24px; margin-top: 24px; }
+.three-viewport { height: 540px; min-width: 0; border-radius: 16px; overflow: hidden; background: #172b2e; }
+.three-viewport canvas { display: block; }
+.three-controls { display: flex; flex-direction: column; gap: 16px; }
+.three-controls h3 { overflow-wrap: anywhere; }
+.three-controls small, .three-controls p { line-height: 1.5; font-size: 12px; }
+.three-controls button { padding: 12px; border: 1px solid #72958a; border-radius: 8px; cursor: pointer; }
+@media(max-width: 900px) { .three-layout { grid-template-columns: 1fr; } .three-viewport { height: 380px; } }
+.three-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.three-fieldset:disabled { opacity: .65; }
+.football-presets { border: 1px solid #49655c; padding: 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; }
+.football-preset-list { max-height: 240px; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
+.football-preset-list button { display: flex; text-align: left; gap: 10px; align-items: center; background: transparent; color: inherit; }
+.football-preset-list button[aria-pressed="true"] { border-color: #b8e3cc; background: #29423b; }
+.football-preset-list small { display: block; opacity: .7; }
+.preset-swatch { width: 24px; height: 36px; border-radius: 4px; flex-shrink: 0; border: 1px solid #83978f; }
+.three-viewport { position: relative; }
+.three-viewport.show-safe-zones::after { content: 'COMPOSITION SAFE ZONE'; position: absolute; inset: 10% 12%; border: 1px dashed #ffffffaa; color: #ffffffbb; font-size: 9px; padding: 6px; pointer-events: none; }

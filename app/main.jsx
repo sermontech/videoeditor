@@ -41,13 +41,18 @@ import {
   PanelLeftClose,
 } from "lucide-react";
 import "./styles.css";
+import AuthGate from "./AuthGate";
+const ThreeStudio = React.lazy(() => import("./ThreeStudio"));
+import { cloudMode, apiBase, authHeaders } from "./session";
 const request = async (url, options = {}) => {
-  const r = await fetch("/api" + url, {
+  const r = await fetch(apiBase + "/api" + url, {
     ...options,
-    headers:
-      options.body instanceof FormData
+    headers: {
+      ...(await authHeaders()),
+      ...(options.body instanceof FormData
         ? {}
-        : { "Content-Type": "application/json" },
+        : { "Content-Type": "application/json" }),
+    },
     body:
       options.body instanceof FormData
         ? options.body
@@ -93,10 +98,15 @@ function App() {
     refresh().catch((e) => setError(e.message));
   }, []);
   useEffect(() => {
-    if (!data?.generations.some((g) => g.status === "rendering")) return;
+    if (
+      !data?.generations.some((g) => ["queued", "rendering"].includes(g.status))
+    )
+      return;
     const t = setInterval(() => refresh().catch(() => {}), 1500);
     return () => clearInterval(t);
-  }, [data?.generations.some((g) => g.status === "rendering")]);
+  }, [
+    data?.generations.some((g) => ["queued", "rendering"].includes(g.status)),
+  ]);
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 4500);
@@ -112,6 +122,11 @@ function App() {
     window.addEventListener("beforeunload", fn);
     return () => window.removeEventListener("beforeunload", fn);
   }, [dirty]);
+  useEffect(() => {
+    if (!cloudMode) return;
+    const timer = setInterval(() => refresh().catch(() => {}), 300000);
+    return () => clearInterval(timer);
+  }, []);
   const act = async (fn) => {
     setBusy(true);
     try {
@@ -240,6 +255,7 @@ function App() {
             ["home", LayoutGrid, "Overview"],
             ["projects", Clapperboard, "Projects"],
             ["library", FolderOpen, "Media library"],
+            ["three", Monitor, "3D studio"],
             ["brand", Palette, "Brand kit"],
             ["learning", Sparkles, "Improvement lab"],
           ].map(([id, Icon, label]) => (
@@ -288,7 +304,10 @@ function App() {
           <div className="profile">
             <span className="profile-avatar">Y</span>
             <div>
-              Your studio<small>Local workspace</small>
+              Your studio
+              <small>
+                {cloudMode ? "Authenticated workspace" : "Local workspace"}
+              </small>
             </div>
             <span className="online-dot" />
           </div>
@@ -307,6 +326,7 @@ function App() {
                   brand: "Brand kit",
                   learning: "Improvement lab",
                   studio: "Editor",
+                  three: "3D studio",
                 }[view]
               }
             </span>
@@ -320,7 +340,9 @@ function App() {
           <div className="topbar-right">
             <span className="local-status">
               <i />
-              All yours. Stored locally.
+              {cloudMode
+                ? "Private cloud workspace"
+                : "All yours. Stored locally."}
             </span>
             <button
               className="icon-btn"
@@ -683,7 +705,10 @@ function App() {
                   <button
                     className="btn primary"
                     disabled={
-                      busy || selectedGeneration?.status === "rendering"
+                      busy ||
+                      ["queued", "rendering"].includes(
+                        selectedGeneration?.status,
+                      )
                     }
                     onClick={() =>
                       act(async () => {
@@ -692,7 +717,9 @@ function App() {
                       })
                     }
                   >
-                    {selectedGeneration?.status === "rendering" ? (
+                    {["queued", "rendering"].includes(
+                      selectedGeneration?.status,
+                    ) ? (
                       <Loader2 className="spin" size={16} />
                     ) : (
                       <Sparkles size={16} />
@@ -869,6 +896,81 @@ function App() {
                         ))}
                     </select>
                   </label>
+                  <div className="character-controls">
+                    <h3>2D character animation</h3>
+                    <p>
+                      Reuse an uploaded image. Transparent PNGs work best. No AI
+                      body animation or lip-sync.
+                    </p>
+                    <label className="field">
+                      Character image
+                      <select
+                        value={scene.characterId || ""}
+                        onChange={(e) =>
+                          patchScene({ characterId: e.target.value || null })
+                        }
+                      >
+                        <option value="">No character</option>
+                        {data.assets
+                          .filter((a) => a.kind === "image")
+                          .map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.name}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    {scene.characterId && (
+                      <>
+                        <label className="field">
+                          Placement
+                          <select
+                            value={scene.characterPosition || "center"}
+                            onChange={(e) =>
+                              patchScene({ characterPosition: e.target.value })
+                            }
+                          >
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                          </select>
+                        </label>
+                        <label className="field">
+                          Motion
+                          <select
+                            value={scene.characterMotion || "still"}
+                            onChange={(e) =>
+                              patchScene({ characterMotion: e.target.value })
+                            }
+                          >
+                            <option value="still">Still</option>
+                            <option value="float">Gentle float (2D)</option>
+                          </select>
+                        </label>
+                        <button
+                          className="text-btn"
+                          onClick={() =>
+                            patch({
+                              scenes: project.scenes.map((s) => ({
+                                ...s,
+                                characterId: scene.characterId,
+                                characterPosition:
+                                  scene.characterPosition || "center",
+                                characterMotion:
+                                  scene.characterMotion || "still",
+                              })),
+                            })
+                          }
+                        >
+                          Use this character in all scenes
+                        </button>
+                      </>
+                    )}
+                    <small>
+                      Only upload characters and likenesses you have permission
+                      to use. Preview is approximate; review the exported video.
+                    </small>
+                  </div>
                   <button
                     className="text-btn"
                     onClick={() => uploadRef.current.click()}
@@ -985,6 +1087,11 @@ function App() {
                 </section>
               </div>
             </>
+          )}
+          {view === "three" && (
+            <React.Suspense fallback={<p>Loading 3D workspace…</p>}>
+              <ThreeStudio />
+            </React.Suspense>
           )}
           {view === "library" && (
             <>
@@ -1345,7 +1452,9 @@ function App() {
             <span>Made for your point of view.</span>
             <span>
               Clear Take Studio <span className="footer-dot">•</span>{" "}
-              Local-first, creator-led
+              {cloudMode
+                ? "Private cloud, creator-led"
+                : "Local-first, creator-led"}
             </span>
           </footer>
         </main>
@@ -1541,7 +1650,7 @@ function App() {
                 )}
                 <a
                   className="btn secondary"
-                  href={modal.asset.url}
+                  href={modal.asset.downloadUrl || modal.asset.url}
                   download={modal.asset.name}
                 >
                   <Download size={16} />
@@ -1556,14 +1665,17 @@ function App() {
                 </div>
                 <h2>Your personal studio.</h2>
                 <p>
-                  This is a single-user workspace. Projects, feedback, uploads
-                  and exports are saved on this server—not automatically on your
-                  Windows computer.
+                  {cloudMode
+                    ? "This is your authenticated cloud workspace."
+                    : "This is a single-user workspace."}{" "}
+                  {cloudMode
+                    ? "Projects and media are stored in Supabase, not automatically on your Windows computer."
+                    : "Projects, feedback, uploads and exports are saved on this server—not automatically on your Windows computer."}
                 </p>
                 <div className="info-note">
-                  No sign-in or team access controls are configured. Use a
-                  trusted environment; do not expose it publicly with private
-                  footage.
+                  {cloudMode
+                    ? "Only invited accounts can use the studio. Owner-based policies protect private projects and media. Download important exports for your own backup."
+                    : "No sign-in or team access controls are configured. Use a trusted environment; do not expose it publicly with private footage."}
                 </div>
                 <button
                   className="btn primary full"
@@ -1582,7 +1694,7 @@ function App() {
                 <div className="help-steps">
                   <p>
                     <b>1. Write your story.</b> Create a project with your own
-                    script. The local storyboard builder splits it into editable
+                    script. The storyboard builder splits it into editable
                     scenes.
                   </p>
                   <p>
@@ -1622,9 +1734,12 @@ function App() {
 }
 function Preview({ scene, project, data, index }) {
   const asset = data.assets.find((a) => a.id === scene.assetId);
+  const character = data.assets.find((a) => a.id === scene.characterId);
   return (
     <div
-      className={"video-canvas " + project.format}
+      className={
+        "video-canvas " + project.format + (character ? " has-character" : "")
+      }
       style={{
         background: data.brand.background,
         color: data.brand.foreground,
@@ -1649,6 +1764,17 @@ function Preview({ scene, project, data, index }) {
             alt="Scene background"
           />
         ))}
+      {character && (
+        <img
+          alt="Character layer"
+          src={character.url}
+          className={
+            "character-layer " +
+            (scene.characterPosition || "center") +
+            (scene.characterMotion === "float" ? " floating" : "")
+          }
+        />
+      )}
       <div className="canvas-content">
         <div className="canvas-brand">{data.brand.name.toUpperCase()}</div>
         <div className="canvas-rule" />
@@ -1674,11 +1800,15 @@ function Preview({ scene, project, data, index }) {
 function Generation({ g, reviewed, onReview }) {
   return (
     <>
-      {g.status === "rendering" ? (
+      {["queued", "rendering"].includes(g.status) ? (
         <div className="rendering">
           <div>
             <Loader2 size={18} className="spin" />
-            <strong>Making your take…</strong>
+            <strong>
+              {g.status === "queued"
+                ? "Queued for the render worker…"
+                : "Making your take…"}
+            </strong>
             <span>{g.progress}%</span>
           </div>
           <div className="progress">
@@ -1702,7 +1832,11 @@ function Generation({ g, reviewed, onReview }) {
             src={g.url}
           />
           <div className="export-actions">
-            <a href={g.url} download={g.title + ".mp4"} className="btn primary">
+            <a
+              href={g.downloadUrl || g.url}
+              download={g.title + ".mp4"}
+              className="btn primary"
+            >
               <Download size={15} />
               Download MP4
             </a>
@@ -1762,7 +1896,7 @@ function NewProject({ busy, onCreate }) {
           onChange={(e) => setScript(e.target.value)}
         />
         <span className="field-foot">
-          Your words are kept. Scenes are split locally, not written by AI.{" "}
+          Your words are kept. Scenes are split by rules, not written by AI.{" "}
           {script.length}/3000
         </span>
       </label>
@@ -1844,4 +1978,8 @@ function Feedback({ busy, onSubmit }) {
     </form>
   );
 }
-createRoot(document.getElementById("root")).render(<App />);
+createRoot(document.getElementById("root")).render(
+  <AuthGate>
+    <App />
+  </AuthGate>,
+);
