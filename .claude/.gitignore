@@ -1,0 +1,11 @@
+# Machine-local REA profile registration; regenerate with scripts/setup-rea.sh.
+.claude.json
+.claude.json.*
+settings.local.json
+projects/
+backups/
+history.jsonl
+statsig/
+telemetry/
+cache/
+session-env/
